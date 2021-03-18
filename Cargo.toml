@@ -1,0 +1,16 @@
+[package]
+name = "davis"
+version = "0.1.0"
+authors = ["Simon Persson <simon@flaskpost.me>"]
+edition = "2018"
+
+[profile.release]
+lto = true
+panic = "abort"
+codegen-units = 1
+
+[dependencies]
+libc = "0.2"
+mpd = { git = "https://github.com/SimonPersson/rust-mpd.git" }
+sixel = { git = "https://github.com/SimonPersson/sixel-rs.git" }
+textwrap = { version = "0.13", default-features = false }
