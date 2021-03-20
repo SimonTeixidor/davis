@@ -6,6 +6,7 @@ pub enum Error {
         context: &'static str,
         error: std::io::Error,
     },
+    PicoError(pico_args::Error),
 }
 
 impl From<sixel::status::Error> for Error {
@@ -17,6 +18,12 @@ impl From<sixel::status::Error> for Error {
 impl From<mpd::error::Error> for Error {
     fn from(e: mpd::error::Error) -> Self {
         Error::MpdError(e)
+    }
+}
+
+impl From<pico_args::Error> for Error {
+    fn from(e: pico_args::Error) -> Self {
+        Error::PicoError(e)
     }
 }
 

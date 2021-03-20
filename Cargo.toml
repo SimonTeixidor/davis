@@ -14,3 +14,4 @@ libc = "0.2"
 mpd = { git = "https://github.com/SimonPersson/rust-mpd.git" }
 sixel = { git = "https://github.com/SimonPersson/sixel-rs.git" }
 textwrap = { version = "0.13", default-features = false }
+pico-args = "0.4"
