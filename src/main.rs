@@ -37,13 +37,27 @@ fn print_formatted(s: &str, colour: Colour, style: Style) {
 
 fn try_main() -> Result<(), Error> {
     let subcommand: SubCommand = parse_args()?;
+    let mut c =
+        Client::new(TcpStream::connect("127.0.0.1:6600").context("Failed to connect to MPD.")?)?;
     match subcommand {
         SubCommand::NowPlaying => {
             let winsize = terminal_dimensions::terminal_size();
-            let mut c = Client::new(
-                TcpStream::connect("127.0.0.1:6600").context("Failed to connect to MPD.")?,
-            )?;
             now_playing::now_playing(&mut c, &winsize).unwrap();
+        }
+        SubCommand::Play => {
+            c.play()?;
+        }
+        SubCommand::Pause => {
+            c.pause(true)?;
+        }
+        SubCommand::Toggle => {
+            c.toggle_pause()?;
+        }
+        SubCommand::Ls(path) => {
+            let path = path.as_ref().map(|s| s.trim_end_matches('/')).unwrap_or("");
+            for song in c.lsinfo(&path as &dyn AsRef<str>)? {
+                dbg!(song);
+            }
         }
     }
     Ok(())
@@ -57,23 +71,32 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         std::process::exit(0);
     }
 
-    let subcommand = match pargs.subcommand()?.as_ref().map(|s| &**s) {
-        Some("current") => SubCommand::NowPlaying,
-        None => SubCommand::NowPlaying,
-        Some(s) => {
-            return Err(pico_args::Error::ArgumentParsingFailed {
-                cause: format!("unknown subcommand {}", s),
-            })
-        }
-    };
-    Ok(SubCommand::NowPlaying)
+    match pargs.subcommand()?.as_ref().map(|s| &**s) {
+        Some("current") => Ok(SubCommand::NowPlaying),
+        Some("play") => Ok(SubCommand::Play),
+        Some("pause") => Ok(SubCommand::Pause),
+        Some("toggle") => Ok(SubCommand::Toggle),
+        Some("ls") => Ok(SubCommand::Ls(pargs.opt_free_from_str()?)),
+        None => Ok(SubCommand::NowPlaying),
+        Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
+            cause: format!("unknown subcommand {}", s),
+        }),
+    }
 }
 
 enum SubCommand {
     NowPlaying,
+    Play,
+    Pause,
+    Toggle,
+    Ls(Option<String>),
 }
 
 static HELP: &str = "\
 USAGE:
-  davis [current]     Display currently playing song
+  davis [current] Display currently playing song
+  davis pause     Pause playback
+  davis play      Start playback
+  davis toggle    Toggle playback
+  davis ls [path] Toggle playback
 ";
