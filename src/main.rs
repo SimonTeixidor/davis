@@ -44,21 +44,21 @@ fn try_main() -> Result<(), Error> {
             let winsize = terminal_dimensions::terminal_size();
             now_playing::now_playing(&mut c, &winsize).unwrap();
         }
-        SubCommand::Play => {
-            c.play()?;
-        }
-        SubCommand::Pause => {
-            c.pause(true)?;
-        }
-        SubCommand::Toggle => {
-            c.toggle_pause()?;
-        }
+        SubCommand::Play => c.play()?,
+        SubCommand::Pause => c.pause(true)?,
+        SubCommand::Toggle => c.toggle_pause()?,
         SubCommand::Ls(path) => {
             let path = path.as_ref().map(|s| s.trim_end_matches('/')).unwrap_or("");
             for song in c.lsinfo(&path as &dyn AsRef<str>)? {
                 dbg!(song);
             }
         }
+        SubCommand::Clear => c.clear()?,
+        SubCommand::Next => c.next()?,
+        SubCommand::Prev => c.prev()?,
+        SubCommand::Stop => c.stop()?,
+        SubCommand::Add(p) => c.add(&p as &dyn AsRef<str>)?,
+        SubCommand::Load(p) => c.load(p, ..)?,
     }
     Ok(())
 }
@@ -77,6 +77,12 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         Some("pause") => Ok(SubCommand::Pause),
         Some("toggle") => Ok(SubCommand::Toggle),
         Some("ls") => Ok(SubCommand::Ls(pargs.opt_free_from_str()?)),
+        Some("clear") => Ok(SubCommand::Clear),
+        Some("next") => Ok(SubCommand::Next),
+        Some("prev") => Ok(SubCommand::Prev),
+        Some("stop") => Ok(SubCommand::Stop),
+        Some("add") => Ok(SubCommand::Add(pargs.free_from_str()?)),
+        Some("load") => Ok(SubCommand::Load(pargs.free_from_str()?)),
         None => Ok(SubCommand::NowPlaying),
         Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("unknown subcommand {}", s),
@@ -90,6 +96,12 @@ enum SubCommand {
     Pause,
     Toggle,
     Ls(Option<String>),
+    Clear,
+    Next,
+    Prev,
+    Stop,
+    Add(String),
+    Load(String),
 }
 
 static HELP: &str = "\
@@ -99,4 +111,10 @@ USAGE:
   davis play      Start playback
   davis toggle    Toggle playback
   davis ls [path] Toggle playback
+  davis clear     Clear the queue (and stop playback)
+  davis next      Start playing next song on the queue
+  davis prev      Start playing next previous song on the queue
+  davis stop      Stop playback
+  davis add path  Add path to queue
+  davis load name Replace queue with playlist
 ";

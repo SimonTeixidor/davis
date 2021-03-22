@@ -32,7 +32,7 @@ checksum = "a8ca8afbe8af1785e09636acb5a41e08a765f5f0340568716c18a8700ba3c0d3"
 [[package]]
 name = "mpd"
 version = "0.1.0"
-source = "git+https://github.com/SimonPersson/rust-mpd.git#7fcadcfa913f0195e500323d271fed929128fdb0"
+source = "git+https://github.com/SimonPersson/rust-mpd.git#c353009d661ec0d4b8f006cb9124b0bd9f828e81"
 dependencies = [
  "bufstream",
 ]
