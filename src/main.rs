@@ -59,6 +59,14 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Stop => c.stop()?,
         SubCommand::Add(p) => c.add(&p as &dyn AsRef<str>)?,
         SubCommand::Load(p) => c.load(p, ..)?,
+        SubCommand::Queue => {
+            for song in c.queue()? {
+                match (song.artist, song.title) {
+                    (Some(artist), Some(title)) => println!("{} - {}", artist, title),
+                    _ => println!("{}", song.file),
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -83,6 +91,7 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         Some("stop") => Ok(SubCommand::Stop),
         Some("add") => Ok(SubCommand::Add(pargs.free_from_str()?)),
         Some("load") => Ok(SubCommand::Load(pargs.free_from_str()?)),
+        Some("q") | Some("queue") => Ok(SubCommand::Queue),
         None => Ok(SubCommand::NowPlaying),
         Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("unknown subcommand {}", s),
@@ -102,6 +111,7 @@ enum SubCommand {
     Stop,
     Add(String),
     Load(String),
+    Queue,
 }
 
 static HELP: &str = "\
@@ -117,4 +127,5 @@ USAGE:
   davis stop      Stop playback
   davis add path  Add path to queue
   davis load name Replace queue with playlist
+  davis q[ueue]   Display the current queue
 ";
