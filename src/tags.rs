@@ -4,15 +4,21 @@ pub struct Tags {
 }
 
 impl Tags {
-    pub fn from_song(
+    pub fn from_song(song: &mpd::Song) -> Tags {
+        Tags {
+            native_mpd: song.tags.clone(),
+            raw_comments: vec![],
+        }
+    }
+
+    pub fn from_song_and_raw_comments(
         song: &mpd::Song,
-        client: &mut mpd::Client,
-    ) -> Result<Tags, mpd::error::Error> {
-        let raw_comments = client.readcomments(&song)?.flatten().collect::<Vec<_>>();
-        Ok(Tags {
+        raw_comments: Vec<(String, String)>,
+    ) -> Tags {
+        Tags {
             native_mpd: song.tags.clone(),
             raw_comments,
-        })
+        }
     }
 
     pub fn get<'a>(&'a self, tag: &'a str) -> Vec<&'a str> {

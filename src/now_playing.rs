@@ -35,7 +35,10 @@ pub fn now_playing(client: &mut mpd::Client, winsize: &winsize) -> Result<(), Er
         Some(s) => s,
     };
 
-    let tags = Tags::from_song(&song, client)?;
+    let tags = Tags::from_song_and_raw_comments(
+        &song,
+        client.readcomments(&song)?.collect::<Result<_, _>>()?,
+    );
     if let Ok(albumart_path) = fetch_albumart(&song, client) {
         let encoder = sixel::encoder::Encoder::new()?;
         encoder.set_width(sixel::optflags::SizeSpecification::Pixel(image_width))?;
