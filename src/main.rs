@@ -60,11 +60,18 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Add(p) => c.add(&p as &dyn AsRef<str>)?,
         SubCommand::Load(p) => c.load(p, ..)?,
         SubCommand::Queue => {
+            let current_song = c.currentsong()?;
             for song in c.queue()? {
-                match (song.artist, song.title) {
-                    (Some(artist), Some(title)) => println!("{} - {}", artist, title),
-                    _ => println!("{}", song.file),
-                }
+                let title = match (song.artist, song.title) {
+                    (Some(artist), Some(title)) => format!("{} - {}", artist, title),
+                    _ => song.file,
+                };
+                let title = if current_song.as_ref().and_then(|s| s.place) == song.place {
+                    format!("{}", FormattedString::new(&*title).style(Style::Bold))
+                } else {
+                    title
+                };
+                println!("{}", title);
             }
         }
     }
