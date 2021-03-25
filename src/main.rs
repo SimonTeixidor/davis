@@ -4,6 +4,7 @@ use std::net::TcpStream;
 mod ansi;
 mod error;
 mod now_playing;
+mod queue;
 mod table;
 mod tags;
 mod terminal_dimensions;
@@ -59,21 +60,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Stop => c.stop()?,
         SubCommand::Add(p) => c.add(&p as &dyn AsRef<str>)?,
         SubCommand::Load(p) => c.load(p, ..)?,
-        SubCommand::Queue => {
-            let current_song = c.currentsong()?;
-            for song in c.queue()? {
-                let title = match (song.artist, song.title) {
-                    (Some(artist), Some(title)) => format!("{} - {}", artist, title),
-                    _ => song.file,
-                };
-                let title = if current_song.as_ref().and_then(|s| s.place) == song.place {
-                    format!("{}", FormattedString::new(&*title).style(Style::Bold))
-                } else {
-                    title
-                };
-                println!("{}", title);
-            }
-        }
+        SubCommand::Queue(grouped) => queue::print(c.queue()?, c.currentsong()?, grouped)?,
     }
     Ok(())
 }
@@ -98,7 +85,7 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         Some("stop") => Ok(SubCommand::Stop),
         Some("add") => Ok(SubCommand::Add(pargs.free_from_str()?)),
         Some("load") => Ok(SubCommand::Load(pargs.free_from_str()?)),
-        Some("q") | Some("queue") => Ok(SubCommand::Queue),
+        Some("q") | Some("queue") => Ok(SubCommand::Queue(pargs.contains("--group"))),
         None => Ok(SubCommand::NowPlaying),
         Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("unknown subcommand {}", s),
@@ -118,7 +105,7 @@ enum SubCommand {
     Stop,
     Add(String),
     Load(String),
-    Queue,
+    Queue(bool),
 }
 
 static HELP: &str = "\
