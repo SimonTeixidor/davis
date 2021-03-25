@@ -25,6 +25,7 @@ impl Tags {
         let mut tags = tag_filter(&*self.native_mpd, tag)
             .chain(tag_filter(&*self.raw_comments, tag))
             .collect::<Vec<_>>();
+        tags.sort();
         tags.dedup();
         tags
     }

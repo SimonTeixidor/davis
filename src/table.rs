@@ -16,31 +16,21 @@ pub struct Table<'a>(pub &'a [TableRow<'a>]);
 
 impl<'a> fmt::Display for Table<'a> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        let terminal_width = formatter.width().unwrap_or(80);
+        let width = formatter.width().unwrap_or(80);
         let key_width = self
             .0
             .iter()
             .map(|TableRow { key, .. }| key.string.len())
             .max()
             .unwrap_or(20);
-        let val_width = terminal_width - (key_width + 1).min(terminal_width);
-        for (
-            key_idx,
-            TableRow {
-                key,
-                val:
-                    FormattedString {
-                        colour,
-                        style,
-                        string,
-                    },
-            },
-        ) in self.0.iter().enumerate()
-        {
-            for (val_idx, line) in textwrap::fill(string, val_width).lines().enumerate() {
+
+        let val_width = width - (key_width + 1).min(width);
+
+        for (key_idx, TableRow { key, val }) in self.0.iter().enumerate() {
+            for (val_idx, line) in textwrap::fill(val.string, val_width).lines().enumerate() {
                 let line = FormattedString::new(line);
-                let line = style.iter().fold(line, |l, s| l.style(*s));
-                let line = colour.iter().fold(line, |l, c| l.colour(*c));
+                let line = val.style.iter().fold(line, |l, s| l.style(*s));
+                let line = val.colour.iter().fold(line, |l, c| l.colour(*c));
                 if !(key_idx == 0 && val_idx == 0) {
                     writeln!(formatter,)?;
                 }
