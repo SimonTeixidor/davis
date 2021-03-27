@@ -10,3 +10,4 @@ Davis is a command-line client for [Music Player Daemon](https://www.musicpd.org
 * Readcomments
 * JSON
 * idle
+* Aliases
