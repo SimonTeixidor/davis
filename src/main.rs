@@ -85,7 +85,7 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         Some("stop") => Ok(SubCommand::Stop),
         Some("add") => Ok(SubCommand::Add(pargs.free_from_str()?)),
         Some("load") => Ok(SubCommand::Load(pargs.free_from_str()?)),
-        Some("q") | Some("queue") => Ok(SubCommand::Queue(pargs.contains("--group"))),
+        Some("queue") => Ok(SubCommand::Queue(pargs.contains("--group"))),
         None => Ok(SubCommand::NowPlaying),
         Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("unknown subcommand {}", s),
@@ -121,5 +121,5 @@ USAGE:
   davis stop      Stop playback
   davis add path  Add path to queue
   davis load name Replace queue with playlist
-  davis q[ueue]   Display the current queue
+  davis queue     Display the current queue
 ";
