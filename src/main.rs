@@ -114,7 +114,7 @@ USAGE:
   davis pause     Pause playback
   davis play      Start playback
   davis toggle    Toggle playback
-  davis ls [path] Toggle playback
+  davis ls [path] List files in path
   davis clear     Clear the queue (and stop playback)
   davis next      Start playing next song on the queue
   davis prev      Start playing next previous song on the queue
