@@ -67,16 +67,21 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Add(p) => c.add(&p as &dyn AsRef<str>)?,
         SubCommand::Load(p) => c.load(p, ..)?,
         SubCommand::Queue(grouped) => queue::print(c.queue()?, c.currentsong()?, grouped)?,
-        SubCommand::Search(SearchType::TagValPairs(pairs)) => {
-            let mut query = mpd::Query::new();
-            for (k, v) in pairs {
-                query.and(mpd::Term::Tag(k.into()), v);
-            }
-            for song in c.search(&query, None)? {
+        SubCommand::Search(search) => {
+            for song in c.search(&search.to_query(), None)? {
                 println!("{}", song.file);
             }
         }
-        SubCommand::Search(_) => unimplemented!(),
+        SubCommand::List { tag, search } => {
+            let query = search
+                .as_ref()
+                .map(|s| s.to_query())
+                .unwrap_or(mpd::Query::new());
+
+            for val in c.list(&mpd::Term::Tag(tag.into()), &query)? {
+                println!("{}", val);
+            }
+        }
     }
     Ok(())
 }
@@ -103,6 +108,10 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         Some("load") => Ok(SubCommand::Load(pargs.free_from_str()?)),
         Some("queue") => Ok(SubCommand::Queue(pargs.contains("--group"))),
         Some("search") => Ok(SubCommand::Search(parse_search(pargs)?)),
+        Some("list") => Ok(SubCommand::List {
+            tag: pargs.free_from_str()?,
+            search: parse_search(pargs).ok(),
+        }),
         None => Ok(SubCommand::NowPlaying),
         Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("unknown subcommand {}", s),
@@ -124,11 +133,30 @@ enum SubCommand {
     Load(String),
     Queue(bool),
     Search(SearchType),
+    List {
+        tag: String,
+        search: Option<SearchType>,
+    },
 }
 
 enum SearchType {
     Expr(String),
     TagValPairs(Vec<(String, String)>),
+}
+
+impl SearchType {
+    fn to_query(&self) -> mpd::Query {
+        match self {
+            SearchType::TagValPairs(pairs) => {
+                let mut query = mpd::Query::new();
+                for (k, v) in pairs {
+                    query.and(mpd::Term::Tag(k.into()), v);
+                }
+                query
+            }
+            SearchType::Expr(_) => unimplemented!(),
+        }
+    }
 }
 
 fn parse_search(mut pargs: pico_args::Arguments) -> Result<SearchType, pico_args::Error> {
@@ -171,4 +199,5 @@ USAGE:
   davis queue               Display the current queue
   davis search --expr expr  Find tracks matching expr
   davis search --key val    Find tracks by sub-string search
+  davis list [tag] [search] List all values for tag, for tracks matching search
 ";
