@@ -67,6 +67,16 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Add(p) => c.add(&p as &dyn AsRef<str>)?,
         SubCommand::Load(p) => c.load(p, ..)?,
         SubCommand::Queue(grouped) => queue::print(c.queue()?, c.currentsong()?, grouped)?,
+        SubCommand::Search(SearchType::TagValPairs(pairs)) => {
+            let mut query = mpd::Query::new();
+            for (k, v) in pairs {
+                query.and(mpd::Term::Tag(k.into()), v);
+            }
+            for song in c.search(&query, None)? {
+                println!("{}", song.file);
+            }
+        }
+        SubCommand::Search(_) => unimplemented!(),
     }
     Ok(())
 }
@@ -92,6 +102,7 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         Some("add") => Ok(SubCommand::Add(pargs.free_from_str()?)),
         Some("load") => Ok(SubCommand::Load(pargs.free_from_str()?)),
         Some("queue") => Ok(SubCommand::Queue(pargs.contains("--group"))),
+        Some("search") => Ok(SubCommand::Search(parse_search(pargs)?)),
         None => Ok(SubCommand::NowPlaying),
         Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("unknown subcommand {}", s),
@@ -112,20 +123,52 @@ enum SubCommand {
     Add(String),
     Load(String),
     Queue(bool),
+    Search(SearchType),
+}
+
+enum SearchType {
+    Expr(String),
+    TagValPairs(Vec<(String, String)>),
+}
+
+fn parse_search(mut pargs: pico_args::Arguments) -> Result<SearchType, pico_args::Error> {
+    if pargs.contains("--expr") {
+        Ok(SearchType::Expr(pargs.value_from_str("--expr")?))
+    } else {
+        let remaining = pargs.finish();
+        let remaining = remaining
+            .iter()
+            .map(|o| o.to_str())
+            .collect::<Option<Vec<_>>>()
+            .ok_or(pico_args::Error::NonUtf8Argument)?;
+
+        if remaining.len() % 2 != 0 {
+            return Err(pico_args::Error::ArgumentParsingFailed { cause : "Number of arguments to search was odd. Search expects key-value pairs, or an --expr option.".to_string() });
+        }
+
+        Ok(SearchType::TagValPairs(
+            remaining
+                .chunks_exact(2)
+                .map(|v| (v[0].to_string(), v[1].to_string()))
+                .collect(),
+        ))
+    }
 }
 
 static HELP: &str = "\
 USAGE:
-  davis [current] Display currently playing song
-  davis pause     Pause playback
-  davis play      Start playback
-  davis toggle    Toggle playback
-  davis ls [path] List files in path
-  davis clear     Clear the queue (and stop playback)
-  davis next      Start playing next song on the queue
-  davis prev      Start playing next previous song on the queue
-  davis stop      Stop playback
-  davis add path  Add path to queue
-  davis load name Replace queue with playlist
-  davis queue     Display the current queue
+  davis [current]           Display currently playing song
+  davis pause               Pause playback
+  davis play                Start playback
+  davis toggle              Toggle playback
+  davis ls [path]           List files in path
+  davis clear               Clear the queue (and stop playback)
+  davis next                Start playing next song on the queue
+  davis prev                Start playing next previous song on the queue
+  davis stop                Stop playback
+  davis add path            Add path to queue
+  davis load name           Replace queue with playlist
+  davis queue               Display the current queue
+  davis search --expr expr  Find tracks matching expr
+  davis search --key val    Find tracks by sub-string search
 ";
