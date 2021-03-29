@@ -1,4 +1,6 @@
+use mpd::lsinfo::LsInfoResponse;
 use mpd::Client;
+use mpd::Song;
 use std::net::TcpStream;
 
 mod ansi;
@@ -50,8 +52,12 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Toggle => c.toggle_pause()?,
         SubCommand::Ls(path) => {
             let path = path.as_ref().map(|s| s.trim_end_matches('/')).unwrap_or("");
-            for song in c.lsinfo(&path as &dyn AsRef<str>)? {
-                dbg!(song);
+            for entry in c.lsinfo(&path as &dyn AsRef<str>)? {
+                match entry {
+                    LsInfoResponse::Song(Song { file, .. }) => println!("{}", file),
+                    LsInfoResponse::Directory { path, .. }
+                    | LsInfoResponse::Playlist { path, .. } => println!("{}", path),
+                }
             }
         }
         SubCommand::Clear => c.clear()?,
