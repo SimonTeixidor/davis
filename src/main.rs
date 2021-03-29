@@ -76,7 +76,7 @@ fn try_main() -> Result<(), Error> {
             let query = search
                 .as_ref()
                 .map(|s| s.to_query())
-                .unwrap_or(mpd::Query::new());
+                .unwrap_or(mpd::Query::Filters(mpd::FilterQuery::new()));
 
             for val in c.list(&mpd::Term::Tag(tag.into()), &query)? {
                 println!("{}", val);
@@ -148,38 +148,39 @@ impl SearchType {
     fn to_query(&self) -> mpd::Query {
         match self {
             SearchType::TagValPairs(pairs) => {
-                let mut query = mpd::Query::new();
+                let mut query = mpd::FilterQuery::new();
                 for (k, v) in pairs {
                     query.and(mpd::Term::Tag(k.into()), v);
                 }
-                query
+                mpd::Query::Filters(query)
             }
-            SearchType::Expr(_) => unimplemented!(),
+            SearchType::Expr(s) => mpd::Query::Expression(s.clone()),
         }
     }
 }
 
 fn parse_search(mut pargs: pico_args::Arguments) -> Result<SearchType, pico_args::Error> {
-    if pargs.contains("--expr") {
-        Ok(SearchType::Expr(pargs.value_from_str("--expr")?))
-    } else {
-        let remaining = pargs.finish();
-        let remaining = remaining
-            .iter()
-            .map(|o| o.to_str())
-            .collect::<Option<Vec<_>>>()
-            .ok_or(pico_args::Error::NonUtf8Argument)?;
+    match pargs.opt_value_from_str("--expr")? {
+        Some(s) => Ok(SearchType::Expr(s)),
+        None => {
+            let remaining = pargs.finish();
+            let remaining = remaining
+                .iter()
+                .map(|o| o.to_str())
+                .collect::<Option<Vec<_>>>()
+                .ok_or(pico_args::Error::NonUtf8Argument)?;
 
-        if remaining.len() % 2 != 0 {
-            return Err(pico_args::Error::ArgumentParsingFailed { cause : "Number of arguments to search was odd. Search expects key-value pairs, or an --expr option.".to_string() });
+            if remaining.len() % 2 != 0 {
+                return Err(pico_args::Error::ArgumentParsingFailed { cause : "Number of arguments to search was odd. Search expects key-value pairs, or an --expr option.".to_string() });
+            }
+
+            Ok(SearchType::TagValPairs(
+                remaining
+                    .chunks_exact(2)
+                    .map(|v| (v[0].to_string(), v[1].to_string()))
+                    .collect(),
+            ))
         }
-
-        Ok(SearchType::TagValPairs(
-            remaining
-                .chunks_exact(2)
-                .map(|v| (v[0].to_string(), v[1].to_string()))
-                .collect(),
-        ))
     }
 }
 

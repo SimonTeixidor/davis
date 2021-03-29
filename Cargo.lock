@@ -19,9 +19,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.90"
+version = "0.2.91"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba4aede83fc3617411dc6993bc8c70919750c1c257c6ca6a502aed6e0e2394ae"
+checksum = "8916b1f6ca17130ec6568feccee27c156ad12037880833a3b842a823236502e7"
 
 [[package]]
 name = "make-cmd"
@@ -32,7 +32,7 @@ checksum = "a8ca8afbe8af1785e09636acb5a41e08a765f5f0340568716c18a8700ba3c0d3"
 [[package]]
 name = "mpd"
 version = "0.1.0"
-source = "git+https://github.com/SimonPersson/rust-mpd.git#c353009d661ec0d4b8f006cb9124b0bd9f828e81"
+source = "git+https://github.com/SimonPersson/rust-mpd.git#f4d5e60fdb8b892b10d7dcc41f283b2ebb60828d"
 dependencies = [
  "bufstream",
 ]
