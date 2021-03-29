@@ -82,6 +82,21 @@ fn try_main() -> Result<(), Error> {
                 println!("{}", val);
             }
         }
+        SubCommand::ReadComments(p) => {
+            let table_rows = c
+                .readcomments(&p as &dyn AsRef<str>)?
+                .collect::<Result<Vec<_>, _>>()?;
+            let table_rows = table_rows
+                .iter()
+                .map(|(k, v)| {
+                    table::TableRow::new(
+                        ansi::FormattedString::new(&k).style(ansi::Style::Bold),
+                        ansi::FormattedString::new(&v),
+                    )
+                })
+                .collect::<Vec<_>>();
+            println!("{}", table::Table(&*table_rows));
+        }
     }
     Ok(())
 }
@@ -112,6 +127,7 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
             tag: pargs.free_from_str()?,
             search: parse_search(pargs).ok(),
         }),
+        Some("readcomments") => Ok(SubCommand::ReadComments(pargs.free_from_str()?)),
         None => Ok(SubCommand::NowPlaying),
         Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("unknown subcommand {}", s),
@@ -137,6 +153,7 @@ enum SubCommand {
         tag: String,
         search: Option<SearchType>,
     },
+    ReadComments(String),
 }
 
 enum SearchType {
@@ -201,4 +218,5 @@ USAGE:
   davis search --expr expr  Find tracks matching expr
   davis search --key val    Find tracks by sub-string search
   davis list [tag] [search] List all values for tag, for tracks matching search
+  davis readcomments [path] List raw tags for song at path
 ";
