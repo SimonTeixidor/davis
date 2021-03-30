@@ -24,9 +24,7 @@ static INTERESTING_TAGS: &[(&str, &str)] = &[
 ];
 
 pub fn now_playing(client: &mut mpd::Client, winsize: &winsize) -> Result<(), Error> {
-    let char_width = (winsize.ws_xpixel / winsize.ws_col) as usize;
     let width = winsize.ws_col.min(50) as usize;
-    let image_width = (width * char_width) as u64;
     let song = match client.currentsong()? {
         None => {
             println!("Not playing.");
@@ -39,10 +37,13 @@ pub fn now_playing(client: &mut mpd::Client, winsize: &winsize) -> Result<(), Er
         &song,
         client.readcomments(&song)?.collect::<Result<_, _>>()?,
     );
-    if let Ok(albumart_path) = fetch_albumart(&song, client) {
-        let encoder = sixel::encoder::Encoder::new()?;
-        encoder.set_width(sixel::optflags::SizeSpecification::Pixel(image_width))?;
-        encoder.encode_file(&albumart_path)?;
+
+    match fetch_albumart(&song, client, width as u32, winsize) {
+        Ok(albumart) => match std::io::stdout().lock().write_all(&*albumart) {
+            Err(e) => println!("Failed to write album art to stdout: {}", e),
+            Ok(_) => (),
+        },
+        Err(e) => println!("Failed to fetch album art: {}", e),
     }
 
     println!("{}", header(&tags, width));
@@ -75,7 +76,12 @@ fn header(tags: &Tags, width: usize) -> String {
         .unwrap_or_else(|| "".to_string())
 }
 
-fn fetch_albumart(song: &Song, client: &mut Client) -> Result<PathBuf, Error> {
+fn fetch_albumart(
+    song: &Song,
+    client: &mut Client,
+    width: u32,
+    winsize: &winsize,
+) -> Result<Vec<u8>, Error> {
     let path = albumart_cache_path(song);
 
     create_dir_all(path.parent().expect("Albumart path has no parent?!"))
@@ -87,7 +93,14 @@ fn fetch_albumart(song: &Song, client: &mut Client) -> Result<PathBuf, Error> {
         file.write_all(&*albumart)
             .context("Failed to write albumart to file.")?;
     }
-    Ok(path)
+
+    let img = image::io::Reader::open(path)
+        .context("Couldn't open albumart_path.")?
+        .with_guessed_format()
+        .context("Couldn't guess format of album art.")?
+        .decode()?;
+    let sixel = sixel::to_sixel(width as usize, &img, 1024, winsize).context("generating sixel")?;
+    Ok(sixel)
 }
 
 fn albumart_cache_path(song: &Song) -> PathBuf {

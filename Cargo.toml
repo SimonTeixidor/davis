@@ -4,6 +4,14 @@ version = "0.1.0"
 authors = ["Simon Persson <simon@flaskpost.me>"]
 edition = "2018"
 
+[lib]
+name = "sixel"
+path = "src/sixel/lib.rs"
+
+[[bin]]
+name = "davis"
+path = "src/main.rs"
+
 [profile.release]
 lto = true
 panic = "abort"
@@ -12,6 +20,14 @@ codegen-units = 1
 [dependencies]
 libc = "0.2"
 mpd = { git = "https://github.com/SimonPersson/rust-mpd.git" }
-sixel = { git = "https://github.com/SimonPersson/sixel-rs.git" }
 textwrap = { version = "0.13", default-features = false }
 pico-args = "0.4"
+image = { version = "0.23", default-features = false, features = ["jpeg", "png"] }
+color_quant = "1.1.0"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "sixel_bench"
+harness = false

@@ -1,17 +1,19 @@
+use std::fmt;
+
 #[derive(Debug)]
 pub enum Error {
-    SixelError(sixel::status::Error),
     MpdError(mpd::error::Error),
     IoError {
         context: &'static str,
         error: std::io::Error,
     },
     PicoError(pico_args::Error),
+    ImageError(image::ImageError),
 }
 
-impl From<sixel::status::Error> for Error {
-    fn from(e: sixel::status::Error) -> Self {
-        Error::SixelError(e)
+impl From<image::ImageError> for Error {
+    fn from(e: image::ImageError) -> Self {
+        Error::ImageError(e)
     }
 }
 
@@ -34,5 +36,24 @@ pub trait WithContext<T> {
 impl<T> WithContext<T> for Result<T, std::io::Error> {
     fn context(self, context: &'static str) -> Result<T, Error> {
         self.map_err(|error| Error::IoError { context, error })
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::MpdError(e) => {
+                write!(f, "MPD Error: {}", e)
+            }
+            Error::IoError { error, context } => {
+                write!(f, "IoError: {}, context: {}", error, context)
+            }
+            Error::PicoError(e) => {
+                write!(f, "Argument parsing error: {}:", e)
+            }
+            Error::ImageError(e) => {
+                write!(f, "Image Error: {}:", e)
+            }
+        }
     }
 }
