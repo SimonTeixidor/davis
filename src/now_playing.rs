@@ -1,8 +1,9 @@
 use crate::ansi::{FormattedString, Style};
+use crate::config::COLUMN_WIDTH;
 use crate::error::{Error, WithContext};
 use crate::table::{Table, TableRow};
 use crate::tags::Tags;
-use libc::winsize;
+use crate::terminal_dimensions;
 use mpd::{Client, Song};
 use std::env;
 use std::fs::{create_dir_all, File};
@@ -23,8 +24,16 @@ static INTERESTING_TAGS: &[(&str, &str)] = &[
     ("RATING", "Rating"),
 ];
 
-pub fn now_playing(client: &mut mpd::Client, winsize: &winsize) -> Result<(), Error> {
-    let width = winsize.ws_col.min(50) as usize;
+pub fn now_playing(client: &mut mpd::Client) -> Result<(), Error> {
+    let winsize = terminal_dimensions::terminal_size();
+    let width = COLUMN_WIDTH as usize;
+    let char_width = if winsize.ws_col != 0 && winsize.ws_xpixel != 0 {
+        winsize.ws_xpixel / winsize.ws_col
+    } else {
+        10
+    };
+    let image_width = width as u32 * char_width as u32;
+
     let song = match client.currentsong()? {
         None => {
             println!("Not playing.");
@@ -38,7 +47,7 @@ pub fn now_playing(client: &mut mpd::Client, winsize: &winsize) -> Result<(), Er
         client.readcomments(&song)?.collect::<Result<_, _>>()?,
     );
 
-    match fetch_albumart(&song, client, width as u32, winsize) {
+    match fetch_albumart(&song, client, image_width) {
         Ok(albumart) => match std::io::stdout().lock().write_all(&*albumart) {
             Err(e) => println!("Failed to write album art to stdout: {}", e),
             Ok(_) => (),
@@ -76,12 +85,7 @@ fn header(tags: &Tags, width: usize) -> String {
         .unwrap_or_else(|| "".to_string())
 }
 
-fn fetch_albumart(
-    song: &Song,
-    client: &mut Client,
-    width: u32,
-    winsize: &winsize,
-) -> Result<Vec<u8>, Error> {
+fn fetch_albumart(song: &Song, client: &mut Client, width: u32) -> Result<Vec<u8>, Error> {
     let path = albumart_cache_path(song);
 
     create_dir_all(path.parent().expect("Albumart path has no parent?!"))
@@ -99,7 +103,7 @@ fn fetch_albumart(
         .with_guessed_format()
         .context("Couldn't guess format of album art.")?
         .decode()?;
-    let sixel = sixel::to_sixel(width as usize, &img, 1024, winsize).context("generating sixel")?;
+    let sixel = sixel::to_sixel(width, &img, 1024).context("generating sixel")?;
     Ok(sixel)
 }
 

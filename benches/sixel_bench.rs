@@ -7,7 +7,7 @@ fn bench_sixel(b: &mut Criterion) {
         .unwrap();
 
     b.bench_function("to_sixel_writer", |b| {
-        b.iter(|| sixel::to_sixel_writer(50, &img, 1024, std::io::sink()))
+        b.iter(|| sixel::to_sixel_writer(500, &img, 1024, std::io::sink()))
     });
 }
 

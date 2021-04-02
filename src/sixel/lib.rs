@@ -1,35 +1,22 @@
 use color_quant::NeuQuant;
 use image::{imageops::FilterType, DynamicImage, GenericImageView};
-use libc::winsize;
 use std::io::{Error, Write};
 
-pub fn to_sixel(
-    width: usize,
-    image: &DynamicImage,
-    colors: usize,
-    tty_size: &winsize,
-) -> Result<Vec<u8>, Error> {
+pub fn to_sixel(width: u32, image: &DynamicImage, colors: usize) -> Result<Vec<u8>, Error> {
     let mut image_data = Vec::<u8>::new();
-    to_sixel_writer(width, image, colors, &mut image_data, tty_size)?;
+    to_sixel_writer(width, image, colors, &mut image_data)?;
     Ok(image_data)
 }
 
 // Copied from https://github.com/o2sh/onefetch/blob/master/src/onefetch/image_backends/sixel.rs,
 // with some modifications.
 pub fn to_sixel_writer<W: Write>(
-    width: usize,
+    width: u32,
     image: &DynamicImage,
     colors: usize,
     mut output: W,
-    tty_size: &winsize,
 ) -> Result<(), Error> {
-    let cw = tty_size.ws_xpixel / tty_size.ws_col;
-
-    let image = image.resize(
-        (width as usize * cw as usize) as u32,
-        u32::MAX,
-        FilterType::Lanczos3,
-    );
+    let image = image.resize(width, u32::MAX, FilterType::Lanczos3);
 
     let rgba_image = image.into_rgba8(); // convert the image to rgba samples
     let flat_samples = rgba_image.as_flat_samples();

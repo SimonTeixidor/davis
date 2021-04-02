@@ -4,6 +4,7 @@ use mpd::Song;
 use std::net::TcpStream;
 
 mod ansi;
+mod config;
 mod error;
 mod now_playing;
 mod queue;
@@ -43,10 +44,7 @@ fn try_main() -> Result<(), Error> {
     let mut c =
         Client::new(TcpStream::connect("127.0.0.1:6600").context("Failed to connect to MPD.")?)?;
     match subcommand {
-        SubCommand::NowPlaying => {
-            let winsize = terminal_dimensions::terminal_size();
-            now_playing::now_playing(&mut c, &winsize).unwrap();
-        }
+        SubCommand::NowPlaying => now_playing::now_playing(&mut c)?,
         SubCommand::Play => c.play()?,
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
