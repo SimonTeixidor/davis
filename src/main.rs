@@ -6,6 +6,7 @@ use std::net::TcpStream;
 mod ansi;
 mod config;
 mod error;
+mod filecache;
 mod now_playing;
 mod queue;
 mod table;

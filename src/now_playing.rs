@@ -1,15 +1,13 @@
 use crate::ansi::{FormattedString, Style};
 use crate::config::COLUMN_WIDTH;
 use crate::error::{Error, WithContext};
+use crate::filecache;
 use crate::table::{Table, TableRow};
 use crate::tags::Tags;
 use crate::terminal_dimensions;
 use mpd::{Client, Song};
-use std::env;
-use std::fs::{create_dir_all, File};
-use std::io::Write;
+use std::fs::File;
 use std::ops::Add;
-use std::path::PathBuf;
 
 static INTERESTING_TAGS: &[(&str, &str)] = &[
     ("COMPOSER", "Composer"),
@@ -48,7 +46,7 @@ pub fn now_playing(client: &mut mpd::Client) -> Result<(), Error> {
     );
 
     match fetch_albumart(&song, client, image_width) {
-        Ok(albumart) => match std::io::stdout().lock().write_all(&*albumart) {
+        Ok(mut albumart) => match std::io::copy(&mut albumart, &mut std::io::stdout().lock()) {
             Err(e) => println!("Failed to write album art to stdout: {}", e),
             Ok(_) => (),
         },
@@ -85,35 +83,21 @@ fn header(tags: &Tags, width: usize) -> String {
         .unwrap_or_else(|| "".to_string())
 }
 
-fn fetch_albumart(song: &Song, client: &mut Client, width: u32) -> Result<Vec<u8>, Error> {
-    let path = albumart_cache_path(song);
+fn fetch_albumart(song: &Song, client: &mut Client, width: u32) -> Result<File, Error> {
+    let cache_key =
+        song.file.rsplit('/').skip(1).fold(String::new(), Add::add) + &*width.to_string();
 
-    create_dir_all(path.parent().expect("Albumart path has no parent?!"))
-        .context("Failed to create dir for albumart cache.")?;
-
-    if !path.exists() {
+    let sixel_file = filecache::cache(&*cache_key, move |f| {
         let albumart = client.albumart(song)?;
-        let mut file = File::create(&path).context("Failed to create albumart file.")?;
-        file.write_all(&*albumart)
-            .context("Failed to write albumart to file.")?;
-    }
-
-    let img = image::io::Reader::open(path)
-        .context("Couldn't open albumart_path.")?
-        .with_guessed_format()
-        .context("Couldn't guess format of album art.")?
-        .decode()?;
-    let sixel = sixel::to_sixel(width, &img, 1024).context("generating sixel")?;
-    Ok(sixel)
-}
-
-fn albumart_cache_path(song: &Song) -> PathBuf {
-    let mut albumart_cache_path = env::temp_dir();
-    albumart_cache_path.push("davis/album_art");
-    let mut image_path = albumart_cache_path;
-    let cache_key = song.file.rsplit('/').skip(1).fold(String::new(), Add::add);
-    image_path.push(cache_key);
-    image_path
+        let img = image::io::Reader::new(std::io::BufReader::new(std::io::Cursor::new(albumart)))
+            .with_guessed_format()
+            .unwrap()
+            .decode()?;
+        sixel::to_sixel_writer(width, &img, 1024, std::io::BufWriter::new(f))
+            .context("writing sixel image")?;
+        Ok(())
+    })?;
+    Ok(sixel_file)
 }
 
 fn classical_work_description(tags: &Tags, width: usize) -> Option<String> {
