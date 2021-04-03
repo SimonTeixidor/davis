@@ -88,6 +88,7 @@ fn fetch_albumart(song: &Song, client: &mut Client, width: u32) -> Result<File, 
         song.file.rsplit('/').skip(1).fold(String::new(), Add::add) + &*width.to_string();
 
     let sixel_file = filecache::cache(&*cache_key, move |f| {
+        client.binarylimit(4_000_000)?;
         let albumart = client.albumart(song)?;
         let img = image::io::Reader::new(std::io::BufReader::new(std::io::Cursor::new(albumart)))
             .with_guessed_format()
