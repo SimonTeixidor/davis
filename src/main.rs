@@ -95,6 +95,9 @@ fn try_main() -> Result<(), Error> {
                 .collect::<Vec<_>>();
             println!("{}", table::Table(&*table_rows));
         }
+        SubCommand::Update => {
+            c.update()?;
+        }
     }
     Ok(())
 }
@@ -126,6 +129,7 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
             search: parse_search(pargs).ok(),
         }),
         Some("readcomments") => Ok(SubCommand::ReadComments(pargs.free_from_str()?)),
+        Some("update") => Ok(SubCommand::Update),
         None => Ok(SubCommand::NowPlaying),
         Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("unknown subcommand {}", s),
@@ -152,6 +156,7 @@ enum SubCommand {
         search: Option<SearchType>,
     },
     ReadComments(String),
+    Update,
 }
 
 enum SearchType {
@@ -223,4 +228,5 @@ USAGE:
   davis search --key val    Find tracks by sub-string search
   davis list [tag] [search] List all values for tag, for tracks matching search
   davis readcomments [path] List raw tags for song at path
+  davis update              Update mpd database
 ";
