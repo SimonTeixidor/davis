@@ -133,7 +133,9 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         }),
         Some("readcomments") => Ok(SubCommand::ReadComments(pargs.free_from_str()?)),
         Some("update") => Ok(SubCommand::Update),
-        None => Ok(SubCommand::NowPlaying),
+        None => Err(pico_args::Error::ArgumentParsingFailed {
+            cause: format!("Missing subcommand"),
+        }),
         Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("unknown subcommand {}", s),
         }),
@@ -215,7 +217,7 @@ fn mpd_host() -> String {
 
 static HELP: &str = "\
 USAGE:
-  davis [current]           Display currently playing song
+  davis current             Display currently playing song
   davis pause               Pause playback
   davis play                Start playback
   davis toggle              Toggle playback
