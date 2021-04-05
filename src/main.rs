@@ -23,7 +23,10 @@ fn main() {
             print_formatted("Failed to parse command line arguments.", BrightRed, Bold);
             println!();
             print_formatted("Caused by:", White, Bold);
-            println!("{}", e);
+            match e {
+                pico_args::Error::ArgumentParsingFailed { cause } => println!("{}", cause),
+                _ => println!("{}", e),
+            }
             println!();
             print_formatted("Please consult the help page:", White, Bold);
             println!("{}", HELP);
