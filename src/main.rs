@@ -9,6 +9,7 @@ mod error;
 mod filecache;
 mod now_playing;
 mod queue;
+mod status;
 mod table;
 mod tags;
 mod terminal_dimensions;
@@ -101,6 +102,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Update => {
             c.update()?;
         }
+        SubCommand::Status => status::status(&mut c)?,
     }
     Ok(())
 }
@@ -133,6 +135,7 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         }),
         Some("readcomments") => Ok(SubCommand::ReadComments(pargs.free_from_str()?)),
         Some("update") => Ok(SubCommand::Update),
+        Some("status") => Ok(SubCommand::Status),
         None => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("Missing subcommand"),
         }),
@@ -162,6 +165,7 @@ enum SubCommand {
     },
     ReadComments(String),
     Update,
+    Status,
 }
 
 enum SearchType {
@@ -234,4 +238,5 @@ USAGE:
   davis list [tag] [search] List all values for tag, for tracks matching search
   davis readcomments [path] List raw tags for song at path
   davis update              Update mpd database
+  davis status              Print current status
 ";
