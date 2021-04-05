@@ -75,6 +75,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cc"
+version = "1.0.67"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3c69b077ad434294d3ce9f1f6143a2a4b89a8a2d54ef813d85003a4fd1137fd"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -213,12 +219,13 @@ dependencies = [
 name = "davis"
 version = "0.1.0"
 dependencies = [
- "color_quant",
  "criterion",
  "image",
+ "imagequant",
  "libc",
  "mpd",
  "pico-args",
+ "rgb",
  "textwrap 0.13.4",
 ]
 
@@ -267,6 +274,28 @@ dependencies = [
  "num-rational",
  "num-traits",
  "png",
+]
+
+[[package]]
+name = "imagequant"
+version = "3.0.3+sys2.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "670a496b08ae806100367d0c3734ccf48562d8f3f1c61c2c6f13e6aca1ae2881"
+dependencies = [
+ "imagequant-sys",
+ "libc",
+ "rgb",
+]
+
+[[package]]
+name = "imagequant-sys"
+version = "3.0.3+sys2.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3689df1fd74c4a1737ea60ba03a05105d37d0fc8e7ba3028e7e10f162939f8fd"
+dependencies = [
+ "bitflags",
+ "cc",
+ "rgb",
 ]
 
 [[package]]
@@ -530,6 +559,15 @@ name = "regex-syntax"
 version = "0.6.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "24d5f089152e60f62d28b835fbff2cd2e8dc0baf1ac13343bef92ab7eed84548"
+
+[[package]]
+name = "rgb"
+version = "0.8.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fddb3b23626145d1776addfc307e1a1851f60ef6ca64f376bcb889697144cf0"
+dependencies = [
+ "bytemuck",
+]
 
 [[package]]
 name = "rustc_version"

@@ -1,6 +1,6 @@
 use crate::ansi::{FormattedString, Style};
 use crate::config::COLUMN_WIDTH;
-use crate::error::{Error, WithContext};
+use crate::error::Error;
 use crate::filecache;
 use crate::table::{Table, TableRow};
 use crate::tags::Tags;
@@ -94,8 +94,7 @@ fn fetch_albumart(song: &Song, client: &mut Client, width: u32) -> Result<File, 
             .with_guessed_format()
             .unwrap()
             .decode()?;
-        sixel::to_sixel_writer(width, &img, 1024, std::io::BufWriter::new(f))
-            .context("writing sixel image")?;
+        sixel::to_sixel_writer(width, &img, 1024, std::io::BufWriter::new(f))?;
         Ok(())
     })?;
     Ok(sixel_file)

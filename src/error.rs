@@ -9,11 +9,30 @@ pub enum Error {
     },
     PicoError(pico_args::Error),
     ImageError(image::ImageError),
+    LiqError(imagequant::liq_error),
 }
 
 impl From<image::ImageError> for Error {
     fn from(e: image::ImageError) -> Self {
         Error::ImageError(e)
+    }
+}
+
+impl From<imagequant::liq_error> for Error {
+    fn from(e: imagequant::liq_error) -> Self {
+        Error::LiqError(e)
+    }
+}
+
+impl From<sixel::Error> for Error {
+    fn from(e: sixel::Error) -> Self {
+        match e {
+            sixel::Error::LiqError(e) => Error::LiqError(e),
+            sixel::Error::IoError(error) => Error::IoError {
+                context: "writing sixel image",
+                error,
+            },
+        }
     }
 }
 
@@ -52,6 +71,9 @@ impl fmt::Display for Error {
                 write!(f, "Argument parsing error: {}:", e)
             }
             Error::ImageError(e) => {
+                write!(f, "Image Error: {}:", e)
+            }
+            Error::LiqError(e) => {
                 write!(f, "Image Error: {}:", e)
             }
         }

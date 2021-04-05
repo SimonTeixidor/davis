@@ -1,54 +1,83 @@
-use color_quant::NeuQuant;
-use image::{imageops::FilterType, DynamicImage, GenericImageView};
-use std::io::{Error, Write};
+use image::{imageops::FilterType, DynamicImage};
+use imagequant;
+use std::io::Write;
 
-pub fn to_sixel(width: u32, image: &DynamicImage, colors: usize) -> Result<Vec<u8>, Error> {
+pub fn to_sixel(width: u32, image: &DynamicImage, colors: i32) -> Result<Vec<u8>, Error> {
     let mut image_data = Vec::<u8>::new();
     to_sixel_writer(width, image, colors, &mut image_data)?;
     Ok(image_data)
 }
 
-// Copied from https://github.com/o2sh/onefetch/blob/master/src/onefetch/image_backends/sixel.rs,
-// with some modifications.
 pub fn to_sixel_writer<W: Write>(
     width: u32,
     image: &DynamicImage,
-    colors: usize,
+    colors: i32,
     mut output: W,
 ) -> Result<(), Error> {
     let image = image.resize(width, u32::MAX, FilterType::Lanczos3);
 
-    let rgba_image = image.into_rgba8(); // convert the image to rgba samples
-    let flat_samples = rgba_image.as_flat_samples();
-    let color_map = NeuQuant::new(10, colors, flat_samples.as_slice());
+    let rgba_image = image.into_rgba8();
+
+    let pixels = rgba_image
+        .pixels()
+        .map(|p| rgb::RGBA8 {
+            r: p[0],
+            g: p[1],
+            b: p[2],
+            a: p[3],
+        })
+        .collect::<Vec<_>>();
+
+    let mut liq = imagequant::new();
+    liq.set_max_colors(colors);
+    let mut img = liq
+        .new_image(
+            &*pixels,
+            rgba_image.width() as usize,
+            rgba_image.height() as usize,
+            0.0,
+        )
+        .unwrap();
+    let mut res = liq.quantize(&img).unwrap();
+    res.set_dithering_level(1.0);
+    let (palette, pixels) = res.remapped(&mut img).unwrap();
 
     output.write_all(b"\x1BPq")?;
-    output.write_all(format!("\"1;1;{};{}", rgba_image.width(), rgba_image.height()).as_bytes())?;
+    output.write_all(
+        format!(
+            "\"1;1;{};{}",
+            rgba_image.width() as usize,
+            rgba_image.height() as usize
+        )
+        .as_bytes(),
+    )?;
 
-    for (i, pixel) in color_map.color_map_rgb().chunks(3).enumerate() {
+    for (i, pixel) in palette.iter().enumerate() {
         let color_multiplier = 100.0 / 255.0;
         write!(
             output,
             "#{};2;{};{};{}",
             i,
-            (pixel[0] as f32 * color_multiplier) as u32,
-            (pixel[1] as f32 * color_multiplier) as u32,
-            (pixel[2] as f32 * color_multiplier) as u32
+            (pixel.r as f32 * color_multiplier) as u32,
+            (pixel.g as f32 * color_multiplier) as u32,
+            (pixel.b as f32 * color_multiplier) as u32
         )?;
     }
 
     // subtract 1 -> divide -> add 1 to round up the integer division
     for i in 0..((rgba_image.height() - 1) / 6 + 1) {
-        let sixel_row = rgba_image.view(
-            0,
-            i * 6,
-            rgba_image.width(),
-            std::cmp::min(6, rgba_image.height() - i * 6),
-        );
-
-        let mut sixel_row = sixel_row
-            .pixels()
-            .map(|(x, y, p)| (color_map.index_of(&p.0), (x, y)))
+        let from = (i * rgba_image.width() * 6) as usize;
+        let to = (((i + 1) * rgba_image.width() * 6) as usize).min(pixels.len());
+        let to_coords = |j| {
+            (
+                j % rgba_image.width() as usize,
+                j / rgba_image.width() as usize,
+            )
+        };
+        let mut sixel_row = pixels[from..to]
+            .iter()
+            .enumerate()
+            .map(|(j, p)| (p, to_coords(j)))
             .collect::<Vec<_>>();
         sixel_row.sort();
 
@@ -102,5 +131,22 @@ impl<'a, K: Eq, T: Copy, F: Fn(T) -> K> Iterator for Grouped<'a, K, T, F> {
         let (head, tail) = self.0.split_at(i);
         self.0 = tail;
         Some(head)
+    }
+}
+
+pub enum Error {
+    IoError(std::io::Error),
+    LiqError(imagequant::liq_error),
+}
+
+impl From<imagequant::liq_error> for Error {
+    fn from(e: imagequant::liq_error) -> Self {
+        Error::LiqError(e)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::IoError(e)
     }
 }
