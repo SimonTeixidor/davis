@@ -1,6 +1,6 @@
 use crate::{Error, WithContext};
 use std::env;
-use std::fs::{create_dir_all, File};
+use std::fs::{create_dir_all, remove_file, File};
 use std::path::PathBuf;
 
 pub fn cache<F: FnMut(&mut File) -> Result<(), Error>>(
@@ -16,7 +16,13 @@ pub fn cache<F: FnMut(&mut File) -> Result<(), Error>>(
 
     if !cache_path.exists() {
         let mut file = File::create(&cache_path).context("Failed to create albumart file.")?;
-        task(&mut file)?;
+        match task(&mut file) {
+            Ok(_) => (),
+            Err(e) => {
+                remove_file(&cache_path).context("failed to remove corrupt albumart cache file")?;
+                return Err(e);
+            }
+        }
     }
     Ok(File::open(cache_path).context("Failed to open albumart cache file.")?)
 }
