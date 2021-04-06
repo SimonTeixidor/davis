@@ -1,6 +1,7 @@
 use crate::ansi::FormattedString;
 use crate::error::Error;
 use crate::table::{Table, TableRow};
+use std::time::Duration;
 
 pub fn status(c: &mut mpd::Client) -> Result<(), Error> {
     let song = c.currentsong()?;
@@ -16,12 +17,24 @@ pub fn status(c: &mut mpd::Client) -> Result<(), Error> {
     }
 
     let mut table_rows = vec![];
+
+    let time = status.time.map(|(current, total)| {
+        format!(
+            "{}/{} ({:2}%)",
+            duration_format(&current),
+            duration_format(&total),
+            (100. * current.as_secs_f64() / total.as_secs_f64()) as u32
+        )
+    });
+    if let Some(time) = time.as_ref() {
+        table_rows.push(table_row("Time:", &*time));
+    }
+
     let state = match status.state {
         mpd::State::Play => "playing",
         mpd::State::Pause => "paused",
         mpd::State::Stop => "Stopped",
     };
-
     table_rows.push(table_row("State:", state));
 
     let queue_position = status.song.map(|s| format!("{}", 1 + s.pos));
@@ -49,4 +62,8 @@ fn bool_on_off(b: bool) -> &'static str {
     } else {
         "off"
     }
+}
+
+fn duration_format(d: &Duration) -> String {
+    format!("{:02}:{:02}", d.as_secs() / 60, d.as_secs() % 60)
 }
