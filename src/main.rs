@@ -53,7 +53,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
         SubCommand::Ls(path) => {
-            let path = path.as_ref().map(|s| s.trim_end_matches('/')).unwrap_or("");
+            let path = path.as_ref().map(|s| trim_path(&*s)).unwrap_or("");
             for entry in c.lsinfo(&path as &dyn AsRef<str>)? {
                 match entry {
                     LsInfoResponse::Song(Song { file, .. }) => println!("{}", file),
@@ -66,7 +66,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Next => c.next()?,
         SubCommand::Prev => c.prev()?,
         SubCommand::Stop => c.stop()?,
-        SubCommand::Add(p) => c.add(&p as &dyn AsRef<str>)?,
+        SubCommand::Add(p) => c.add(&trim_path(&*p) as &dyn AsRef<str>)?,
         SubCommand::Load(p) => c.load(p, ..)?,
         SubCommand::Queue(grouped) => queue::print(c.queue()?, c.currentsong()?, grouped)?,
         SubCommand::Search(search) => {
@@ -86,7 +86,7 @@ fn try_main() -> Result<(), Error> {
         }
         SubCommand::ReadComments(p) => {
             let table_rows = c
-                .readcomments(&p as &dyn AsRef<str>)?
+                .readcomments(&trim_path(&*p) as &dyn AsRef<str>)?
                 .collect::<Result<Vec<_>, _>>()?;
             let table_rows = table_rows
                 .iter()
@@ -143,6 +143,10 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
             cause: format!("unknown subcommand {}", s),
         }),
     }
+}
+
+fn trim_path(path: &str) -> &str {
+    path.trim_end_matches('/')
 }
 
 enum SubCommand {
