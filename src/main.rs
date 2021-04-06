@@ -54,7 +54,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Toggle => c.toggle_pause()?,
         SubCommand::Ls(path) => {
             let path = path.as_ref().map(|s| trim_path(&*s)).unwrap_or("");
-            for entry in c.lsinfo(&path as &dyn AsRef<str>)? {
+            for entry in c.lsinfo(path)? {
                 match entry {
                     LsInfoResponse::Song(Song { file, .. }) => println!("{}", file),
                     LsInfoResponse::Directory { path, .. }
@@ -66,8 +66,8 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Next => c.next()?,
         SubCommand::Prev => c.prev()?,
         SubCommand::Stop => c.stop()?,
-        SubCommand::Add(p) => c.add(&trim_path(&*p) as &dyn AsRef<str>)?,
-        SubCommand::Load(p) => c.load(p, ..)?,
+        SubCommand::Add(p) => c.add(&*trim_path(&*p))?,
+        SubCommand::Load(p) => c.load(&*p, ..)?,
         SubCommand::Queue(grouped) => queue::print(c.queue()?, c.currentsong()?, grouped)?,
         SubCommand::Search(search) => {
             for song in c.search(&search.to_query(), None)? {
@@ -86,7 +86,7 @@ fn try_main() -> Result<(), Error> {
         }
         SubCommand::ReadComments(p) => {
             let table_rows = c
-                .readcomments(&trim_path(&*p) as &dyn AsRef<str>)?
+                .readcomments(&*trim_path(&*p))?
                 .collect::<Result<Vec<_>, _>>()?;
             let table_rows = table_rows
                 .iter()

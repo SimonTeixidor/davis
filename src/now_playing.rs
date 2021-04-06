@@ -42,7 +42,9 @@ pub fn now_playing(client: &mut mpd::Client) -> Result<(), Error> {
 
     let tags = Tags::from_song_and_raw_comments(
         &song,
-        client.readcomments(&song)?.collect::<Result<_, _>>()?,
+        client
+            .readcomments(&*song.file)?
+            .collect::<Result<_, _>>()?,
     );
 
     match fetch_albumart(&song, client, image_width) {
@@ -89,7 +91,7 @@ fn fetch_albumart(song: &Song, client: &mut Client, width: u32) -> Result<File, 
 
     let sixel_file = filecache::cache(&*cache_key, move |f| {
         client.binarylimit(4_000_000)?;
-        let albumart = client.albumart(song)?;
+        let albumart = client.albumart(&*song.file)?;
         let img = image::io::Reader::new(std::io::BufReader::new(std::io::Cursor::new(albumart)))
             .with_guessed_format()
             .unwrap()
