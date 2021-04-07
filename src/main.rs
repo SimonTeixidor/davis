@@ -75,12 +75,7 @@ fn try_main() -> Result<(), Error> {
             }
         }
         SubCommand::List { tag, search } => {
-            let query = search
-                .as_ref()
-                .map(|s| s.to_query())
-                .unwrap_or(mpd::Query::Filters(mpd::FilterQuery::new()));
-
-            for val in c.list(&mpd::Term::Tag(tag.into()), &query)? {
+            for val in c.list(&mpd::Term::Tag(tag.into()), &search.to_query())? {
                 println!("{}", val);
             }
         }
@@ -131,7 +126,7 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         Some("search") => Ok(SubCommand::Search(parse_search(pargs)?)),
         Some("list") => Ok(SubCommand::List {
             tag: pargs.free_from_str()?,
-            search: parse_search(pargs).ok(),
+            search: parse_search(pargs)?,
         }),
         Some("readcomments") => Ok(SubCommand::ReadComments(pargs.free_from_str()?)),
         Some("update") => Ok(SubCommand::Update),
@@ -163,10 +158,7 @@ enum SubCommand {
     Load(String),
     Queue(bool),
     Search(SearchType),
-    List {
-        tag: String,
-        search: Option<SearchType>,
-    },
+    List { tag: String, search: SearchType },
     ReadComments(String),
     Update,
     Status,
