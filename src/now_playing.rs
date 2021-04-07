@@ -104,7 +104,7 @@ fn fetch_albumart(
                     .with_guessed_format()
                     .unwrap()
                     .decode()?;
-            sixel::to_sixel_writer(width, &img, 1024, std::io::BufWriter::new(f))?;
+            sixel::to_sixel_writer(width, &img, std::io::BufWriter::new(f))?;
             Ok(())
         },
         !cache,

@@ -2,16 +2,15 @@ use image::{imageops::FilterType, DynamicImage};
 use imagequant;
 use std::io::Write;
 
-pub fn to_sixel(width: u32, image: &DynamicImage, colors: i32) -> Result<Vec<u8>, Error> {
+pub fn to_sixel(width: u32, image: &DynamicImage) -> Result<Vec<u8>, Error> {
     let mut image_data = Vec::<u8>::new();
-    to_sixel_writer(width, image, colors, &mut image_data)?;
+    to_sixel_writer(width, image, &mut image_data)?;
     Ok(image_data)
 }
 
 pub fn to_sixel_writer<W: Write>(
     width: u32,
     image: &DynamicImage,
-    colors: i32,
     mut output: W,
 ) -> Result<(), Error> {
     let image = image.resize(width, u32::MAX, FilterType::Lanczos3);
@@ -29,7 +28,6 @@ pub fn to_sixel_writer<W: Write>(
         .collect::<Vec<_>>();
 
     let mut liq = imagequant::new();
-    liq.set_max_colors(colors);
     let mut img = liq
         .new_image(
             &*pixels,
