@@ -6,6 +6,7 @@ use std::path::PathBuf;
 pub fn cache<F: FnMut(&mut File) -> Result<(), Error>>(
     name: &str,
     mut task: F,
+    ignore_existing: bool,
 ) -> Result<File, Error> {
     let home = env::var("HOME").expect("$HOME was not set!");
     let mut cache_path: PathBuf = [&*home, ".cache", "davis", "albumart"].iter().collect();
@@ -14,7 +15,7 @@ pub fn cache<F: FnMut(&mut File) -> Result<(), Error>>(
 
     cache_path.push(name);
 
-    if !cache_path.exists() {
+    if !cache_path.exists() || ignore_existing {
         let mut file = File::create(&cache_path).context("Failed to create albumart file.")?;
         match task(&mut file) {
             Ok(_) => (),

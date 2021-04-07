@@ -22,7 +22,7 @@ static INTERESTING_TAGS: &[(&str, &str)] = &[
     ("RATING", "Rating"),
 ];
 
-pub fn now_playing(client: &mut mpd::Client) -> Result<(), Error> {
+pub fn now_playing(client: &mut mpd::Client, cache: bool) -> Result<(), Error> {
     let winsize = terminal_dimensions::terminal_size();
     let width = COLUMN_WIDTH as usize;
     let char_width = if winsize.ws_col != 0 && winsize.ws_xpixel != 0 {
@@ -47,7 +47,7 @@ pub fn now_playing(client: &mut mpd::Client) -> Result<(), Error> {
             .collect::<Result<_, _>>()?,
     );
 
-    match fetch_albumart(&song, client, image_width) {
+    match fetch_albumart(&song, client, image_width, cache) {
         Ok(mut albumart) => match std::io::copy(&mut albumart, &mut std::io::stdout().lock()) {
             Err(e) => println!("Failed to write album art to stdout: {}", e),
             Ok(_) => (),
@@ -85,20 +85,30 @@ fn header(tags: &Tags, width: usize) -> String {
         .unwrap_or_else(|| "".to_string())
 }
 
-fn fetch_albumart(song: &Song, client: &mut Client, width: u32) -> Result<File, Error> {
+fn fetch_albumart(
+    song: &Song,
+    client: &mut Client,
+    width: u32,
+    cache: bool,
+) -> Result<File, Error> {
     let cache_key =
         song.file.rsplit('/').skip(1).fold(String::new(), Add::add) + &*width.to_string();
 
-    let sixel_file = filecache::cache(&*cache_key, move |f| {
-        client.binarylimit(4_000_000)?;
-        let albumart = client.albumart(&*song.file)?;
-        let img = image::io::Reader::new(std::io::BufReader::new(std::io::Cursor::new(albumart)))
-            .with_guessed_format()
-            .unwrap()
-            .decode()?;
-        sixel::to_sixel_writer(width, &img, 1024, std::io::BufWriter::new(f))?;
-        Ok(())
-    })?;
+    let sixel_file = filecache::cache(
+        &*cache_key,
+        move |f| {
+            client.binarylimit(4_000_000)?;
+            let albumart = client.albumart(&*song.file)?;
+            let img =
+                image::io::Reader::new(std::io::BufReader::new(std::io::Cursor::new(albumart)))
+                    .with_guessed_format()
+                    .unwrap()
+                    .decode()?;
+            sixel::to_sixel_writer(width, &img, 1024, std::io::BufWriter::new(f))?;
+            Ok(())
+        },
+        !cache,
+    )?;
     Ok(sixel_file)
 }
 

@@ -48,7 +48,7 @@ fn try_main() -> Result<(), Error> {
     let subcommand: SubCommand = parse_args()?;
     let mut c = Client::new(TcpStream::connect(mpd_host()).context("Failed to connect to MPD.")?)?;
     match subcommand {
-        SubCommand::NowPlaying => now_playing::now_playing(&mut c)?,
+        SubCommand::NowPlaying(cache) => now_playing::now_playing(&mut c, cache)?,
         SubCommand::Play => c.play()?,
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
@@ -116,7 +116,7 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
     }
 
     match pargs.subcommand()?.as_ref().map(|s| &**s) {
-        Some("current") => Ok(SubCommand::NowPlaying),
+        Some("current") => Ok(SubCommand::NowPlaying(!pargs.contains("--no-cache"))),
         Some("play") => Ok(SubCommand::Play),
         Some("pause") => Ok(SubCommand::Pause),
         Some("toggle") => Ok(SubCommand::Toggle),
@@ -150,7 +150,7 @@ fn trim_path(path: &str) -> &str {
 }
 
 enum SubCommand {
-    NowPlaying,
+    NowPlaying(bool),
     Play,
     Pause,
     Toggle,
@@ -225,7 +225,9 @@ fn mpd_host() -> String {
 
 static HELP: &str = "\
 USAGE:
-  davis current             Display currently playing song
+  davis current --no-cache  Display currently playing song. If --no-cache is
+                            specified, davis will fetch albumart from MPD
+                            even if it exists in cache.
   davis pause               Pause playback
   davis play                Start playback
   davis toggle              Toggle playback
