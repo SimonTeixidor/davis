@@ -75,7 +75,7 @@ fn try_main() -> Result<(), Error> {
             }
         }
         SubCommand::List { tag, search } => {
-            for val in c.list(&mpd::Term::Tag(tag.into()), &search.to_query())? {
+            for val in c.list(&mpd::Term::Tag(&*tag), &search.to_query())? {
                 println!("{}", val);
             }
         }
@@ -175,7 +175,7 @@ impl SearchType {
             SearchType::TagValPairs(pairs) => {
                 let mut query = mpd::FilterQuery::new();
                 for (k, v) in pairs {
-                    query.and(mpd::Term::Tag(k.into()), v);
+                    query.and(mpd::Term::Tag(&*k), v);
                 }
                 mpd::Query::Filters(query)
             }

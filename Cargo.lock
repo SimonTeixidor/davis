@@ -385,7 +385,7 @@ dependencies = [
 [[package]]
 name = "mpd"
 version = "0.1.0"
-source = "git+https://github.com/SimonPersson/rust-mpd.git#af12984c364677704a8e278d48002826f249d6a0"
+source = "git+https://github.com/SimonPersson/rust-mpd.git#e67c8a2a77ca9a32352d62a45782ac0ee9b9978e"
 dependencies = [
  "bufstream",
 ]
@@ -654,9 +654,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ce15dd3ed8aa2f8eeac4716d6ef5ab58b6b9256db41d7e1a0224c2788e8fd87"
+checksum = "48fe99c6bd8b1cc636890bcc071842de909d902c81ac7dab53ba33c421ab8ffb"
 dependencies = [
  "proc-macro2",
  "quote",
