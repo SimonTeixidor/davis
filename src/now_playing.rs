@@ -16,7 +16,7 @@ static INTERESTING_TAGS: &[(&str, &str)] = &[
     ("CONDUCTOR", "Conductor"),
     ("ENSEMBLE", "Ensemble"),
     ("PERFORMER", "Performer"),
-    ("RECORDINGLOCATION", "Location"),
+    ("LOCATION", "Location"),
     ("RECORDINGDATE", "Recording date"),
     ("LABEL", "Label"),
     ("RATING", "Rating"),
