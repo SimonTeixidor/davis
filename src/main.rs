@@ -46,7 +46,9 @@ fn print_formatted(s: &str, colour: Colour, style: Style) {
 
 fn try_main() -> Result<(), Error> {
     let subcommand: SubCommand = parse_args()?;
-    let mut c = Client::new(TcpStream::connect(mpd_host()).context("Failed to connect to MPD.")?)?;
+    let conf = config::get_config()?;
+    let mpd_host = format!("{}:6600", conf.mpd_host);
+    let mut c = Client::new(TcpStream::connect(&mpd_host).context("connecting to MPD.")?)?;
     match subcommand {
         SubCommand::NowPlaying(cache) => now_playing::now_playing(&mut c, cache)?,
         SubCommand::Play => c.play()?,
@@ -207,12 +209,6 @@ fn parse_search(mut pargs: pico_args::Arguments) -> Result<SearchType, pico_args
             ))
         }
     }
-}
-
-fn mpd_host() -> String {
-    let mpd_host = std::env::var("MPD_HOST");
-    let mpd_host = mpd_host.as_ref().map(|s| &**s).unwrap_or("127.0.0.1");
-    format!("{}:6600", mpd_host)
 }
 
 static HELP: &str = "\
