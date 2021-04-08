@@ -22,9 +22,10 @@ impl Tags {
     }
 
     pub fn get<'a>(&'a self, tag: &'a str) -> Vec<&'a str> {
-        let mut tags = tag_filter(&*self.native_mpd, tag)
-            .chain(tag_filter(&*self.raw_comments, tag))
-            .collect::<Vec<_>>();
+        let mut tags = tag_filter(&*self.native_mpd, tag).collect::<Vec<_>>();
+        if tags.is_empty() {
+            tags.extend(tag_filter(&*self.raw_comments, tag));
+        }
         tags.sort();
         tags.dedup();
         tags
