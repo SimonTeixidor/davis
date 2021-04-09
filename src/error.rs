@@ -10,7 +10,6 @@ pub enum Error {
     PicoError(pico_args::Error),
     ImageError(image::ImageError),
     LiqError(imagequant::liq_error),
-    ConfigError(tini::Error),
 }
 
 impl From<image::ImageError> for Error {
@@ -22,12 +21,6 @@ impl From<image::ImageError> for Error {
 impl From<imagequant::liq_error> for Error {
     fn from(e: imagequant::liq_error) -> Self {
         Error::LiqError(e)
-    }
-}
-
-impl From<tini::Error> for Error {
-    fn from(e: tini::Error) -> Self {
-        Error::ConfigError(e)
     }
 }
 
@@ -82,9 +75,6 @@ impl fmt::Display for Error {
             }
             Error::LiqError(e) => {
                 write!(f, "Image Error: {}:", e)
-            }
-            Error::ConfigError(e) => {
-                write!(f, "Config Error: {}:", e)
             }
         }
     }

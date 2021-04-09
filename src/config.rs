@@ -8,12 +8,14 @@ pub static COLUMN_WIDTH: u16 = 50;
 
 pub struct Config {
     pub mpd_host: String,
+    pub default_subcommand: Option<String>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
             mpd_host: "127.0.0.1".to_string(),
+            default_subcommand: None,
         }
     }
 }
@@ -34,6 +36,9 @@ pub fn get_config() -> Result<Config, Error> {
         let line = line.context("reading config file")?;
         if line.starts_with("mpd_host=") {
             conf.mpd_host = line.chars().skip_while(|c| *c != '=').skip(1).collect();
+        } else if line.starts_with("default_subcommand=") {
+            conf.default_subcommand =
+                Some(line.chars().skip_while(|c| *c != '=').skip(1).collect());
         }
     }
 

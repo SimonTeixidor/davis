@@ -1,7 +1,10 @@
 use mpd::lsinfo::LsInfoResponse;
 use mpd::Client;
 use mpd::Song;
+use std::env;
 use std::net::TcpStream;
+use std::path::PathBuf;
+use std::process::Command;
 
 mod ansi;
 mod config;
@@ -10,6 +13,7 @@ mod filecache;
 mod now_playing;
 mod queue;
 mod status;
+mod subcommands;
 mod table;
 mod tags;
 mod terminal_dimensions;
@@ -45,8 +49,8 @@ fn print_formatted(s: &str, colour: Colour, style: Style) {
 }
 
 fn try_main() -> Result<(), Error> {
-    let subcommand: SubCommand = parse_args()?;
     let conf = config::get_config()?;
+    let subcommand: SubCommand = parse_args(&conf)?;
     let mpd_host = format!("{}:6600", conf.mpd_host);
     let mut c = Client::new(TcpStream::connect(&mpd_host).context("connecting to MPD.")?)?;
     match subcommand {
@@ -100,11 +104,20 @@ fn try_main() -> Result<(), Error> {
             c.update()?;
         }
         SubCommand::Status => status::status(&mut c)?,
+        SubCommand::Custom(path) => {
+            Command::new(path)
+                .env("MPD_HOST", conf.mpd_host)
+                .args(env::args().skip(2))
+                .spawn()
+                .context("spawning child process")?
+                .wait()
+                .context("waiting for child process")?;
+        }
     }
     Ok(())
 }
 
-fn parse_args() -> Result<SubCommand, pico_args::Error> {
+fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
     let mut pargs = pico_args::Arguments::from_env();
 
     if pargs.contains(["-h", "--help"]) {
@@ -112,7 +125,12 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         std::process::exit(0);
     }
 
-    match pargs.subcommand()?.as_ref().map(|s| &**s) {
+    match pargs
+        .subcommand()?
+        .as_ref()
+        .or(conf.default_subcommand.as_ref())
+        .map(|s| &**s)
+    {
         Some("current") => Ok(SubCommand::NowPlaying(!pargs.contains("--no-cache"))),
         Some("play") => Ok(SubCommand::Play),
         Some("pause") => Ok(SubCommand::Pause),
@@ -136,9 +154,17 @@ fn parse_args() -> Result<SubCommand, pico_args::Error> {
         None => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("Missing subcommand"),
         }),
-        Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
-            cause: format!("unknown subcommand {}", s),
-        }),
+        Some(s) => {
+            let mut subcommands = subcommands::find_subcommands();
+            let command_name = format!("davis-{}", s);
+            if let Some(path) = subcommands.remove(&command_name) {
+                Ok(SubCommand::Custom(path))
+            } else {
+                Err(pico_args::Error::ArgumentParsingFailed {
+                    cause: format!("unknown subcommand {}", s),
+                })
+            }
+        }
     }
 }
 
@@ -164,6 +190,7 @@ enum SubCommand {
     ReadComments(String),
     Update,
     Status,
+    Custom(PathBuf),
 }
 
 enum SearchType {
