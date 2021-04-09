@@ -1,3 +1,4 @@
+use std::env;
 use std::fmt;
 
 #[allow(dead_code)]
@@ -62,6 +63,11 @@ impl<'a> FormattedString<'a> {
 
 impl<'a> fmt::Display for FormattedString<'a> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        if is_dumb_terminal() {
+            formatter.pad(&*self.string)?;
+            return Ok(());
+        }
+
         match (self.style, self.colour) {
             (Some(colour), Some(style)) => {
                 write!(formatter, "\x1B[{};{}m", colour as u8, style as u8)?;
@@ -84,4 +90,14 @@ impl<'a> fmt::Display for FormattedString<'a> {
         };
         Ok(())
     }
+}
+
+pub fn is_dumb_terminal() -> bool {
+    let is_dumb = match env::var("TERM") {
+        Ok(s) if s == "dumb" => true,
+        _ => false,
+    };
+    let has_no_color = env::var("NO_COLOR").is_ok();
+
+    is_dumb || has_no_color
 }

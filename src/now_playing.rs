@@ -1,4 +1,4 @@
-use crate::ansi::{FormattedString, Style};
+use crate::ansi::{is_dumb_terminal, FormattedString, Style};
 use crate::config::COLUMN_WIDTH;
 use crate::error::Error;
 use crate::filecache;
@@ -47,12 +47,14 @@ pub fn now_playing(client: &mut mpd::Client, cache: bool) -> Result<(), Error> {
             .collect::<Result<_, _>>()?,
     );
 
-    match fetch_albumart(&song, client, image_width, cache) {
-        Ok(mut albumart) => match std::io::copy(&mut albumart, &mut std::io::stdout().lock()) {
-            Err(e) => println!("Failed to write album art to stdout: {}", e),
-            Ok(_) => (),
-        },
-        Err(e) => println!("Failed to fetch album art: {}", e),
+    if !is_dumb_terminal() {
+        match fetch_albumart(&song, client, image_width, cache) {
+            Ok(mut albumart) => match std::io::copy(&mut albumart, &mut std::io::stdout().lock()) {
+                Err(e) => println!("Failed to write album art to stdout: {}", e),
+                Ok(_) => (),
+            },
+            Err(e) => println!("Failed to fetch album art: {}", e),
+        }
     }
 
     println!("{}", header(&tags, width));
