@@ -54,7 +54,10 @@ fn try_main() -> Result<(), Error> {
     let mpd_host = format!("{}:6600", conf.mpd_host);
     let mut c = Client::new(TcpStream::connect(&mpd_host).context("connecting to MPD.")?)?;
     match subcommand {
-        SubCommand::NowPlaying(cache) => now_playing::now_playing(&mut c, cache)?,
+        SubCommand::NowPlaying {
+            enable_image_cache,
+            disable_formatting,
+        } => now_playing::now_playing(&mut c, enable_image_cache, disable_formatting)?,
         SubCommand::Play => c.play()?,
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
@@ -85,9 +88,12 @@ fn try_main() -> Result<(), Error> {
                 println!("{}", val);
             }
         }
-        SubCommand::ReadComments(p) => {
+        SubCommand::ReadComments {
+            file,
+            disable_formatting,
+        } => {
             let table_rows = c
-                .readcomments(&*trim_path(&*p))?
+                .readcomments(&*trim_path(&*file))?
                 .collect::<Result<Vec<_>, _>>()?;
             let table_rows = table_rows
                 .iter()
@@ -98,12 +104,18 @@ fn try_main() -> Result<(), Error> {
                     )
                 })
                 .collect::<Vec<_>>();
-            println!("{}", table::Table(&*table_rows));
+            println!(
+                "{}",
+                table::Table {
+                    rows: &*table_rows,
+                    disable_formatting
+                }
+            );
         }
         SubCommand::Update => {
             c.update()?;
         }
-        SubCommand::Status => status::status(&mut c)?,
+        SubCommand::Status { disable_formatting } => status::status(&mut c, disable_formatting)?,
         SubCommand::Custom(path) => {
             Command::new(path)
                 .env("MPD_HOST", conf.mpd_host)
@@ -125,13 +137,18 @@ fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
         std::process::exit(0);
     }
 
+    let disable_formatting = pargs.contains("--no-format");
+
     match pargs
         .subcommand()?
         .as_ref()
         .or(conf.default_subcommand.as_ref())
         .map(|s| &**s)
     {
-        Some("current") => Ok(SubCommand::NowPlaying(!pargs.contains("--no-cache"))),
+        Some("current") => Ok(SubCommand::NowPlaying {
+            enable_image_cache: !pargs.contains("--no-cache"),
+            disable_formatting,
+        }),
         Some("play") => Ok(SubCommand::Play),
         Some("pause") => Ok(SubCommand::Pause),
         Some("toggle") => Ok(SubCommand::Toggle),
@@ -148,9 +165,12 @@ fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
             tag: pargs.free_from_str()?,
             search: parse_search(pargs)?,
         }),
-        Some("readcomments") => Ok(SubCommand::ReadComments(pargs.free_from_str()?)),
+        Some("readcomments") => Ok(SubCommand::ReadComments {
+            file: pargs.free_from_str()?,
+            disable_formatting,
+        }),
         Some("update") => Ok(SubCommand::Update),
-        Some("status") => Ok(SubCommand::Status),
+        Some("status") => Ok(SubCommand::Status { disable_formatting }),
         None => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("Missing subcommand"),
         }),
@@ -173,7 +193,10 @@ fn trim_path(path: &str) -> &str {
 }
 
 enum SubCommand {
-    NowPlaying(bool),
+    NowPlaying {
+        enable_image_cache: bool,
+        disable_formatting: bool,
+    },
     Play,
     Pause,
     Toggle,
@@ -186,10 +209,18 @@ enum SubCommand {
     Load(String),
     Queue(bool),
     Search(SearchType),
-    List { tag: String, search: SearchType },
-    ReadComments(String),
+    List {
+        tag: String,
+        search: SearchType,
+    },
+    ReadComments {
+        file: String,
+        disable_formatting: bool,
+    },
     Update,
-    Status,
+    Status {
+        disable_formatting: bool,
+    },
     Custom(PathBuf),
 }
 
@@ -260,4 +291,8 @@ USAGE:
   davis readcomments [path] List raw tags for song at path
   davis update              Update mpd database
   davis status              Print current status
+
+OPTIONS:
+  --no-format               Makes current, readcomments, and status commands
+                            write unformatted key-value pairs separated by '='
 ";

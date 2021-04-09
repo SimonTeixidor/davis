@@ -12,13 +12,16 @@ impl<'a> TableRow<'a> {
     }
 }
 
-pub struct Table<'a>(pub &'a [TableRow<'a>]);
+pub struct Table<'a> {
+    pub rows: &'a [TableRow<'a>],
+    pub disable_formatting: bool,
+}
 
 impl<'a> fmt::Display for Table<'a> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let width = formatter.width().unwrap_or(80);
         let key_width = self
-            .0
+            .rows
             .iter()
             .map(|TableRow { key, .. }| key.string.len())
             .max()
@@ -26,18 +29,25 @@ impl<'a> fmt::Display for Table<'a> {
 
         let val_width = width - (key_width + 1).min(width);
 
-        for (key_idx, TableRow { key, val }) in self.0.iter().enumerate() {
-            for (val_idx, line) in textwrap::fill(val.string, val_width).lines().enumerate() {
-                let line = FormattedString::new(line);
-                let line = val.style.iter().fold(line, |l, s| l.style(*s));
-                let line = val.colour.iter().fold(line, |l, c| l.colour(*c));
-                if !(key_idx == 0 && val_idx == 0) {
+        for (key_idx, TableRow { key, val }) in self.rows.iter().enumerate() {
+            if self.disable_formatting {
+                if !(key_idx == 0) {
                     writeln!(formatter,)?;
                 }
+                write!(formatter, "{}={}", key.string, val.string)?;
+            } else {
+                for (val_idx, line) in textwrap::fill(val.string, val_width).lines().enumerate() {
+                    let line = FormattedString::new(line);
+                    let line = val.style.iter().fold(line, |l, s| l.style(*s));
+                    let line = val.colour.iter().fold(line, |l, c| l.colour(*c));
+                    if !(key_idx == 0 && val_idx == 0) {
+                        writeln!(formatter,)?;
+                    }
 
-                let empty_string = FormattedString::new("");
-                let key = if val_idx == 0 { key } else { &empty_string };
-                write!(formatter, "{:width$} {}", key, line, width = key_width)?;
+                    let empty_string = FormattedString::new("");
+                    let key = if val_idx == 0 { key } else { &empty_string };
+                    write!(formatter, "{:width$} {}", key, line, width = key_width)?;
+                }
             }
         }
         Ok(())
@@ -56,7 +66,10 @@ mod test {
         let key2 = FormattedString::new("key");
         let val2 = FormattedString::new("val");
         let rows = [TableRow::new(key1, val1), TableRow::new(key2, val2)];
-        let table = Table(&rows);
+        let table = Table {
+            rows: &rows,
+            disable_formatting: false,
+        };
         let result = format!("{:100}", table);
         let expected = "long_key val\n\
                         key      val";
@@ -78,7 +91,10 @@ mod test {
             .colour(Colour::DarkGreen)
             .style(Style::Bold);
         let rows = [TableRow::new(key1, val1), TableRow::new(key2, val2)];
-        let table = Table(&rows);
+        let table = Table {
+            rows: &rows,
+            disable_formatting: false,
+        };
         let result = format!("{}", table);
         let expected = "\x1B[2;37mlong_key\x1B[0m \x1B[1;32mval\x1B[0m\n\
                         \x1B[2;37mkey     \x1B[0m \x1B[1;32mval\x1B[0m";
@@ -92,7 +108,10 @@ mod test {
         let label = FormattedString::new("some");
         let val = FormattedString::new("table");
         let row = [TableRow::new(label, val)];
-        let table = Table(&row);
+        let table = Table {
+            rows: &row,
+            disable_formatting: false,
+        };
         let result = format!("{:1}", table);
         let expected = "some t\n     a\n     b\n     l\n     e";
         assert_eq!(&*result, expected);

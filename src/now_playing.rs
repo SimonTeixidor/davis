@@ -22,7 +22,11 @@ static INTERESTING_TAGS: &[(&str, &str)] = &[
     ("RATING", "Rating"),
 ];
 
-pub fn now_playing(client: &mut mpd::Client, cache: bool) -> Result<(), Error> {
+pub fn now_playing(
+    client: &mut mpd::Client,
+    cache: bool,
+    disable_formatting: bool,
+) -> Result<(), Error> {
     let winsize = terminal_dimensions::terminal_size();
     let width = COLUMN_WIDTH as usize;
     let char_width = if winsize.ws_col != 0 && winsize.ws_xpixel != 0 {
@@ -57,8 +61,6 @@ pub fn now_playing(client: &mut mpd::Client, cache: bool) -> Result<(), Error> {
         }
     }
 
-    println!("{}", header(&tags, width));
-
     let table_rows = INTERESTING_TAGS
         .iter()
         .map(|(tag, label)| {
@@ -77,7 +79,17 @@ pub fn now_playing(client: &mut mpd::Client, cache: bool) -> Result<(), Error> {
         })
         .flat_map(|v| v.into_iter())
         .collect::<Vec<_>>();
-    println!("{}", Table(&*table_rows));
+
+    if !disable_formatting {
+        println!("{}", header(&tags, width));
+    }
+    println!(
+        "{}",
+        Table {
+            rows: &*table_rows,
+            disable_formatting
+        }
+    );
     Ok(())
 }
 
