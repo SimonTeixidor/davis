@@ -148,6 +148,7 @@ fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
     }
 
     let disable_formatting = pargs.contains("--no-format");
+    let disable_custom_subcommands = pargs.contains("--no-custom-subcommands");
 
     match subcommand
         .as_ref()
@@ -187,12 +188,11 @@ fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
         Some(s) => {
             let mut subcommands = subcommands::find_subcommands();
             let command_name = format!("davis-{}", s);
-            if let Some(path) = subcommands.remove(&command_name) {
-                Ok(SubCommand::Custom(path))
-            } else {
-                Err(pico_args::Error::ArgumentParsingFailed {
+            match subcommands.remove(&command_name) {
+                Some(path) if !disable_custom_subcommands => Ok(SubCommand::Custom(path)),
+                _ => Err(pico_args::Error::ArgumentParsingFailed {
                     cause: format!("unknown subcommand {}", s),
-                })
+                }),
             }
         }
     }
@@ -308,4 +308,5 @@ OPTIONS:
                             write unformatted key-value pairs separated by '='.
   --group                   Causes the queue command to print songs grouped
                             by their album and artist, or composer and work.
+  --no-custom-subcommands   Disables custom subcommands.
 ";
