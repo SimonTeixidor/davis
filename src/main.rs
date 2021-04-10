@@ -281,32 +281,38 @@ fn parse_search(mut pargs: pico_args::Arguments) -> Result<SearchType, pico_args
 
 static HELP: &str = "\
 USAGE:
-  davis current --no-cache  Display currently playing song. If --no-cache is
-                            specified, davis will fetch albumart from MPD
-                            even if it exists in cache.
-  davis pause               Pause playback
-  davis play                Start playback
-  davis toggle              Toggle playback
-  davis ls [path]           List files in path
-  davis clear               Clear the queue (and stop playback)
-  davis next                Start playing next song on the queue
-  davis prev                Start playing next previous song on the queue
-  davis stop                Stop playback
-  davis add path            Add path to queue
-  davis load name           Replace queue with playlist
-  davis queue               Display the current queue
-  davis search --expr expr  Find tracks matching expr
-  davis search --key val    Find tracks by sub-string search
-  davis list [tag] [search] List all values for tag, for tracks matching search
-  davis readcomments [path] List raw tags for song at path
-  davis update              Update mpd database
-  davis status              Print current status
-  davis help                Print this help text
+  davis subcommand [options] [arguments]
+SUBCOMMANDS:
+  current --no-cache  Display currently playing song. If --no-cache is
+                      specified, davis will fetch albumart from MPD
+                      even if it exists in cache.
+  pause               Pause playback
+  play                Start playback
+  toggle              Toggle playback
+  ls [path]           List files in path
+  clear               Clear the queue (and stop playback)
+  next                Start playing next song on the queue
+  prev                Start playing next previous song on the queue
+  stop                Stop playback
+  add path            Add path to queue
+  load name           Replace queue with playlist
+  queue  [--group]    Display the current queue
+  search --expr expr  Find tracks matching expr. The expression expression
+                      format is available in the MPD documentation:
+                      https://www.musicpd.org/doc/html/protocol.html#filters
+  search --key val    Find tracks by sub-string search. Key should be a
+                      tag recognized by MPD, and can be repeated multiple
+                      times. Example --artist 'miles davis' --album milestones
+  list [tag] [search] List all values for tag, for tracks matching search
+  readcomments [path] List raw tags for song at path
+  update              Update mpd database
+  status              Print current status
+  help                Print this help text
 
 OPTIONS:
-  --no-format               Makes current, readcomments, and status commands
-                            write unformatted key-value pairs separated by '='.
-  --group                   Causes the queue command to print songs grouped
-                            by their album and artist, or composer and work.
-  --no-custom-subcommands   Disables custom subcommands.
+  --no-format             Makes current, readcomments, and status commands
+                          write unformatted key-value pairs separated by '='.
+  --group                 Causes the queue command to print songs grouped
+                          by their album and artist, or composer and work.
+  --no-custom-subcommands Disables custom subcommands.
 ";
