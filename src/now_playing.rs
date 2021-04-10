@@ -1,5 +1,5 @@
 use crate::ansi::{is_dumb_terminal, FormattedString, Style};
-use crate::config::{Config, COLUMN_WIDTH};
+use crate::config::Config;
 use crate::error::Error;
 use crate::filecache;
 use crate::table::{Table, TableRow};
@@ -16,13 +16,12 @@ pub fn now_playing(
     conf: &Config,
 ) -> Result<(), Error> {
     let winsize = terminal_dimensions::terminal_size();
-    let width = COLUMN_WIDTH as usize;
     let char_width = if winsize.ws_col != 0 && winsize.ws_xpixel != 0 {
         winsize.ws_xpixel / winsize.ws_col
     } else {
         10
     };
-    let image_width = width as u32 * char_width as u32;
+    let image_width = conf.width as u32 * char_width as u32;
 
     let song = match client.currentsong()? {
         None => {
@@ -70,14 +69,15 @@ pub fn now_playing(
         .collect::<Vec<_>>();
 
     if !disable_formatting {
-        println!("{}", header(&tags, width));
+        println!("{}", header(&tags, conf.width));
     }
     println!(
-        "{}",
+        "{:width$}",
         Table {
             rows: &*table_rows,
             disable_formatting
-        }
+        },
+        width = conf.width
     );
     Ok(())
 }
@@ -133,7 +133,7 @@ fn classical_work_description(tags: &Tags, width: usize) -> Option<String> {
         .style(Style::Bold),
         FormattedString::new(&*textwrap::fill(&*tags.get_option_joined("WORK")?, width))
             .style(Style::Bold),
-        FormattedString::new(&*title).style(Style::Bold),
+        FormattedString::new(&*textwrap::fill(&*title, width)).style(Style::Bold),
     ))
 }
 

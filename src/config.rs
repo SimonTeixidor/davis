@@ -4,7 +4,6 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
-pub static COLUMN_WIDTH: u16 = 50;
 static DEFAULT_TAGS: &[&str] = &[
     "Composer",
     "Work",
@@ -19,6 +18,7 @@ pub struct Config {
     pub mpd_host: String,
     pub default_subcommand: Option<String>,
     pub tags: Vec<String>,
+    pub width: usize,
 }
 
 impl Default for Config {
@@ -27,6 +27,7 @@ impl Default for Config {
             mpd_host: "127.0.0.1".to_string(),
             default_subcommand: None,
             tags: DEFAULT_TAGS.iter().map(ToString::to_string).collect(),
+            width: 50,
         }
     }
 }
@@ -51,6 +52,8 @@ pub fn get_config() -> Result<Config, Error> {
             conf.default_subcommand = Some(default_subcommand.to_string());
         } else if let Some(tags) = key_val("tags", &line) {
             conf.tags = tags.split(',').map(|s| s.trim().to_string()).collect();
+        } else if let Some(width) = key_val("width", &line).and_then(|s| s.parse().ok()) {
+            conf.width = width;
         }
     }
 

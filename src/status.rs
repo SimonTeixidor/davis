@@ -3,7 +3,7 @@ use crate::error::Error;
 use crate::table::{Table, TableRow};
 use std::time::Duration;
 
-pub fn status(c: &mut mpd::Client, disable_formatting: bool) -> Result<(), Error> {
+pub fn status(c: &mut mpd::Client, disable_formatting: bool, width: usize) -> Result<(), Error> {
     let song = c.currentsong()?;
     let status = c.status()?;
 
@@ -51,11 +51,12 @@ pub fn status(c: &mut mpd::Client, disable_formatting: bool) -> Result<(), Error
     table_rows.push(table_row("Single", bool_on_off(status.single)));
     table_rows.push(table_row("Consume", bool_on_off(status.consume)));
     println!(
-        "{}",
+        "{:width$}",
         Table {
             rows: &*table_rows,
             disable_formatting
-        }
+        },
+        width = width
     );
     Ok(())
 }

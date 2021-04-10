@@ -105,17 +105,20 @@ fn try_main() -> Result<(), Error> {
                 })
                 .collect::<Vec<_>>();
             println!(
-                "{}",
+                "{:width$}",
                 table::Table {
                     rows: &*table_rows,
                     disable_formatting
-                }
+                },
+                width = conf.width
             );
         }
         SubCommand::Update => {
             c.update()?;
         }
-        SubCommand::Status { disable_formatting } => status::status(&mut c, disable_formatting)?,
+        SubCommand::Status { disable_formatting } => {
+            status::status(&mut c, disable_formatting, conf.width)?
+        }
         SubCommand::Custom(path) => {
             Command::new(path)
                 .env("MPD_HOST", conf.mpd_host)
