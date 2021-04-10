@@ -22,6 +22,11 @@ use ansi::{Colour, Colour::*, FormattedString, Style, Style::*};
 use error::{Error, WithContext};
 
 fn main() {
+    // Don't crash with error message on broken pipes.
+    unsafe {
+        libc::signal(libc::SIGPIPE, libc::SIG_DFL);
+    }
+
     match try_main() {
         Ok(_) => (),
         Err(Error::PicoError(e)) => {
