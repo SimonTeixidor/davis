@@ -140,15 +140,16 @@ fn try_main() -> Result<(), Error> {
 fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
     let mut pargs = pico_args::Arguments::from_env();
 
-    if pargs.contains(["-h", "--help"]) {
+    let subcommand = pargs.subcommand()?;
+
+    if pargs.contains(["-h", "--help"]) || subcommand.as_ref().filter(|s| *s == "help").is_some() {
         print!("{}", HELP);
         std::process::exit(0);
     }
 
     let disable_formatting = pargs.contains("--no-format");
 
-    match pargs
-        .subcommand()?
+    match subcommand
         .as_ref()
         .or(conf.default_subcommand.as_ref())
         .map(|s| &**s)
@@ -179,6 +180,7 @@ fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
         }),
         Some("update") => Ok(SubCommand::Update),
         Some("status") => Ok(SubCommand::Status { disable_formatting }),
+        Some("help") => Ok(SubCommand::Status { disable_formatting }),
         None => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("Missing subcommand"),
         }),
@@ -299,8 +301,11 @@ USAGE:
   davis readcomments [path] List raw tags for song at path
   davis update              Update mpd database
   davis status              Print current status
+  davis help                Print this help text
 
 OPTIONS:
   --no-format               Makes current, readcomments, and status commands
-                            write unformatted key-value pairs separated by '='
+                            write unformatted key-value pairs separated by '='.
+  --group                   Causes the queue command to print songs grouped
+                            by their album and artist, or composer and work.
 ";
