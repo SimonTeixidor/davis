@@ -300,9 +300,10 @@ SUBCOMMANDS:
   search --expr expr  Find tracks matching expr. The expression expression
                       format is available in the MPD documentation:
                       https://www.musicpd.org/doc/html/protocol.html#filters
-  search --key val    Find tracks by sub-string search. Key should be a
+  search [tag val]    Find tracks by sub-string search. Tag should be a
                       tag recognized by MPD, and can be repeated multiple
-                      times. Example --artist 'miles davis' --album milestones
+                      times. Example:
+                      davis search artist 'Miles Davis' album milestones
   list [tag] [search] List all values for tag, for tracks matching search
   readcomments [path] List raw tags for song at path
   update              Update mpd database
