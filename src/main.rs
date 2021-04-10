@@ -57,7 +57,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::NowPlaying {
             enable_image_cache,
             disable_formatting,
-        } => now_playing::now_playing(&mut c, enable_image_cache, disable_formatting)?,
+        } => now_playing::now_playing(&mut c, enable_image_cache, disable_formatting, &conf)?,
         SubCommand::Play => c.play()?,
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,

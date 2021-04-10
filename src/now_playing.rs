@@ -1,5 +1,5 @@
 use crate::ansi::{is_dumb_terminal, FormattedString, Style};
-use crate::config::COLUMN_WIDTH;
+use crate::config::{Config, COLUMN_WIDTH};
 use crate::error::Error;
 use crate::filecache;
 use crate::table::{Table, TableRow};
@@ -9,23 +9,11 @@ use mpd::{Client, Song};
 use std::fs::File;
 use std::ops::Add;
 
-static INTERESTING_TAGS: &[(&str, &str)] = &[
-    ("COMPOSER", "Composer"),
-    ("WORK", "Work"),
-    ("OPUS", "Opus"),
-    ("CONDUCTOR", "Conductor"),
-    ("ENSEMBLE", "Ensemble"),
-    ("PERFORMER", "Performer"),
-    ("LOCATION", "Location"),
-    ("RECORDINGDATE", "Recording date"),
-    ("LABEL", "Label"),
-    ("RATING", "Rating"),
-];
-
 pub fn now_playing(
     client: &mut mpd::Client,
     cache: bool,
     disable_formatting: bool,
+    conf: &Config,
 ) -> Result<(), Error> {
     let winsize = terminal_dimensions::terminal_size();
     let width = COLUMN_WIDTH as usize;
@@ -61,16 +49,17 @@ pub fn now_playing(
         }
     }
 
-    let table_rows = INTERESTING_TAGS
+    let table_rows = conf
+        .tags
         .iter()
-        .map(|(tag, label)| {
+        .map(|tag| {
             tags.get_option(&*tag)
                 .as_ref()
                 .iter()
                 .flat_map(|values| {
                     values.iter().map(|value| {
                         TableRow::new(
-                            FormattedString::new(&*label).style(Style::Bold),
+                            FormattedString::new(&*tag).style(Style::Bold),
                             FormattedString::new(&*value),
                         )
                     })
