@@ -141,8 +141,12 @@ fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
     let mut pargs = pico_args::Arguments::from_env();
 
     let subcommand = pargs.subcommand()?;
+    let subcommand = subcommand
+        .as_ref()
+        .or(conf.default_subcommand.as_ref())
+        .map(|s| &**s);
 
-    if pargs.contains(["-h", "--help"]) || subcommand.as_ref().filter(|s| *s == "help").is_some() {
+    if pargs.contains(["-h", "--help"]) || subcommand.filter(|s| *s == "help").is_some() {
         print!("{}", HELP);
         std::process::exit(0);
     }
@@ -150,11 +154,17 @@ fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
     let disable_formatting = pargs.contains("--no-format");
     let disable_custom_subcommands = pargs.contains("--no-custom-subcommands");
 
-    match subcommand
-        .as_ref()
-        .or(conf.default_subcommand.as_ref())
-        .map(|s| &**s)
-    {
+    let mut custom_subcommands = subcommands::find_subcommands();
+
+    if let Some(s) = subcommand {
+        let command_name = format!("davis-{}", s);
+        match custom_subcommands.remove(&command_name) {
+            Some(path) if !disable_custom_subcommands => return Ok(SubCommand::Custom(path)),
+            _ => (),
+        }
+    }
+
+    match subcommand {
         Some("current") => Ok(SubCommand::NowPlaying {
             enable_image_cache: !pargs.contains("--no-cache"),
             disable_formatting,
@@ -185,16 +195,9 @@ fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
         None => Err(pico_args::Error::ArgumentParsingFailed {
             cause: format!("Missing subcommand"),
         }),
-        Some(s) => {
-            let mut subcommands = subcommands::find_subcommands();
-            let command_name = format!("davis-{}", s);
-            match subcommands.remove(&command_name) {
-                Some(path) if !disable_custom_subcommands => Ok(SubCommand::Custom(path)),
-                _ => Err(pico_args::Error::ArgumentParsingFailed {
-                    cause: format!("unknown subcommand {}", s),
-                }),
-            }
-        }
+        Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
+            cause: format!("unknown subcommand {}", s),
+        }),
     }
 }
 
