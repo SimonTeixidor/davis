@@ -7,7 +7,6 @@ pub enum Error {
         context: &'static str,
         error: std::io::Error,
     },
-    PicoError(pico_args::Error),
     ImageError(image::ImageError),
     LiqError(imagequant::liq_error),
 }
@@ -42,12 +41,6 @@ impl From<mpd::error::Error> for Error {
     }
 }
 
-impl From<pico_args::Error> for Error {
-    fn from(e: pico_args::Error) -> Self {
-        Error::PicoError(e)
-    }
-}
-
 pub trait WithContext<T> {
     fn context(self, ctx: &'static str) -> Result<T, Error>;
 }
@@ -66,9 +59,6 @@ impl fmt::Display for Error {
             }
             Error::IoError { error, context } => {
                 write!(f, "IoError: {}, context: {}", error, context)
-            }
-            Error::PicoError(e) => {
-                write!(f, "Argument parsing error: {}:", e)
             }
             Error::ImageError(e) => {
                 write!(f, "Image Error: {}:", e)

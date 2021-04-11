@@ -1,9 +1,10 @@
+use clap::Clap;
 use mpd::lsinfo::LsInfoResponse;
 use mpd::Client;
 use mpd::Song;
 use std::env;
+use std::ffi::OsString;
 use std::net::TcpStream;
-use std::path::PathBuf;
 use std::process::Command;
 
 mod ansi;
@@ -18,8 +19,8 @@ mod table;
 mod tags;
 mod terminal_dimensions;
 
-use ansi::{Colour, Colour::*, FormattedString, Style, Style::*};
 use error::{Error, WithContext};
+use subcommands::find_subcommand;
 
 fn main() {
     // Don't crash with error message on broken pipes.
@@ -29,19 +30,6 @@ fn main() {
 
     match try_main() {
         Ok(_) => (),
-        Err(Error::PicoError(e)) => {
-            print_formatted("Failed to parse command line arguments.", BrightRed, Bold);
-            println!();
-            print_formatted("Caused by:", White, Bold);
-            match e {
-                pico_args::Error::ArgumentParsingFailed { cause } => println!("{}", cause),
-                _ => println!("{}", e),
-            }
-            println!();
-            print_formatted("Please consult the help page:", White, Bold);
-            println!("{}", HELP);
-            std::process::exit(1);
-        }
         Err(e) => {
             println!("{:?}", e);
             std::process::exit(1);
@@ -49,24 +37,20 @@ fn main() {
     }
 }
 
-fn print_formatted(s: &str, colour: Colour, style: Style) {
-    println!("{}", FormattedString::new(s).style(style).colour(colour));
-}
-
 fn try_main() -> Result<(), Error> {
     let conf = config::get_config()?;
-    let subcommand: SubCommand = parse_args(&conf)?;
+    let subcommand: SubCommand = parse_args(&conf);
     let mpd_host = format!("{}:6600", conf.mpd_host);
     let mut c = Client::new(TcpStream::connect(&mpd_host).context("connecting to MPD.")?)?;
     match subcommand {
-        SubCommand::NowPlaying {
-            enable_image_cache,
-            disable_formatting,
-        } => now_playing::now_playing(&mut c, enable_image_cache, disable_formatting, &conf)?,
+        SubCommand::Current {
+            no_cache,
+            no_format,
+        } => now_playing::now_playing(&mut c, !no_cache, no_format, &conf)?,
         SubCommand::Play => c.play()?,
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
-        SubCommand::Ls(path) => {
+        SubCommand::Ls { path } => {
             let path = path.as_ref().map(|s| trim_path(&*s)).unwrap_or("");
             for entry in c.lsinfo(path)? {
                 match entry {
@@ -80,23 +64,20 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Next => c.next()?,
         SubCommand::Prev => c.prev()?,
         SubCommand::Stop => c.stop()?,
-        SubCommand::Add(p) => c.add(&*trim_path(&*p))?,
-        SubCommand::Load(p) => c.load(&*p, ..)?,
-        SubCommand::Queue(grouped) => queue::print(c.queue()?, c.currentsong()?, grouped)?,
-        SubCommand::Search(search) => {
-            for song in c.search(&search.to_query(), None)? {
+        SubCommand::Add { path } => c.add(&*trim_path(&*path))?,
+        SubCommand::Load { path } => c.load(&*path, ..)?,
+        SubCommand::Queue { group } => queue::print(c.queue()?, c.currentsong()?, group)?,
+        SubCommand::Search { query } => {
+            for song in c.search(&query.to_mpd_query(), None)? {
                 println!("{}", song.file);
             }
         }
-        SubCommand::List { tag, search } => {
-            for val in c.list(&mpd::Term::Tag(&*tag), &search.to_query())? {
+        SubCommand::List { tag, query } => {
+            for val in c.list(&mpd::Term::Tag(&*tag), &query.to_mpd_query())? {
                 println!("{}", val);
             }
         }
-        SubCommand::ReadComments {
-            file,
-            disable_formatting,
-        } => {
+        SubCommand::ReadComments { file, no_format } => {
             let table_rows = c
                 .readcomments(&*trim_path(&*file))?
                 .collect::<Result<Vec<_>, _>>()?;
@@ -113,7 +94,7 @@ fn try_main() -> Result<(), Error> {
                 "{:width$}",
                 table::Table {
                     rows: &*table_rows,
-                    disable_formatting
+                    disable_formatting: no_format
                 },
                 width = conf.width
             );
@@ -121,13 +102,11 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Update => {
             c.update()?;
         }
-        SubCommand::Status { disable_formatting } => {
-            status::status(&mut c, disable_formatting, conf.width)?
-        }
-        SubCommand::Custom(path) => {
-            Command::new(path)
+        SubCommand::Status { no_format } => status::status(&mut c, no_format, conf.width)?,
+        SubCommand::Custom(args) => {
+            Command::new(&args[0])
                 .env("MPD_HOST", conf.mpd_host)
-                .args(env::args().skip(2))
+                .args(&args[1..])
                 .spawn()
                 .context("spawning child process")?
                 .wait()
@@ -137,67 +116,23 @@ fn try_main() -> Result<(), Error> {
     Ok(())
 }
 
-fn parse_args(conf: &config::Config) -> Result<SubCommand, pico_args::Error> {
-    let mut pargs = pico_args::Arguments::from_env();
-
-    let subcommand = pargs.subcommand()?;
-    let subcommand = subcommand
-        .as_ref()
-        .or(conf.default_subcommand.as_ref())
-        .map(|s| &**s);
-
-    if pargs.contains(["-h", "--help"]) || subcommand.filter(|s| *s == "help").is_some() {
-        print!("{}", HELP);
-        std::process::exit(0);
+fn parse_args(conf: &config::Config) -> SubCommand {
+    let mut args = env::args_os().collect::<Vec<_>>();
+    match &conf.default_subcommand {
+        Some(s) if args.len() == 1 => args.push(s.into()),
+        _ => (),
     }
-
-    let disable_formatting = pargs.contains("--no-format");
-    let disable_custom_subcommands = pargs.contains("--no-custom-subcommands");
-
-    let mut custom_subcommands = subcommands::find_subcommands();
-
-    if let Some(s) = subcommand {
-        let command_name = format!("davis-{}", s);
-        match custom_subcommands.remove(&command_name) {
-            Some(path) if !disable_custom_subcommands => return Ok(SubCommand::Custom(path)),
-            _ => (),
+    match Opts::parse_from(args).subcommand {
+        SubCommand::Custom(mut v) => {
+            if let Some(subcommand) = find_subcommand(&*v[0]) {
+                v[0] = subcommand.as_os_str().to_owned();
+                SubCommand::Custom(v)
+            } else {
+                eprintln!("{} is not a known subcommand.", v[0].to_string_lossy());
+                std::process::exit(1);
+            }
         }
-    }
-
-    match subcommand {
-        Some("current") => Ok(SubCommand::NowPlaying {
-            enable_image_cache: !pargs.contains("--no-cache"),
-            disable_formatting,
-        }),
-        Some("play") => Ok(SubCommand::Play),
-        Some("pause") => Ok(SubCommand::Pause),
-        Some("toggle") => Ok(SubCommand::Toggle),
-        Some("ls") => Ok(SubCommand::Ls(pargs.opt_free_from_str()?)),
-        Some("clear") => Ok(SubCommand::Clear),
-        Some("next") => Ok(SubCommand::Next),
-        Some("prev") => Ok(SubCommand::Prev),
-        Some("stop") => Ok(SubCommand::Stop),
-        Some("add") => Ok(SubCommand::Add(pargs.free_from_str()?)),
-        Some("load") => Ok(SubCommand::Load(pargs.free_from_str()?)),
-        Some("queue") => Ok(SubCommand::Queue(pargs.contains("--group"))),
-        Some("search") => Ok(SubCommand::Search(parse_search(pargs)?)),
-        Some("list") => Ok(SubCommand::List {
-            tag: pargs.free_from_str()?,
-            search: parse_search(pargs)?,
-        }),
-        Some("readcomments") => Ok(SubCommand::ReadComments {
-            file: pargs.free_from_str()?,
-            disable_formatting,
-        }),
-        Some("update") => Ok(SubCommand::Update),
-        Some("status") => Ok(SubCommand::Status { disable_formatting }),
-        Some("help") => Ok(SubCommand::Status { disable_formatting }),
-        None => Err(pico_args::Error::ArgumentParsingFailed {
-            cause: format!("Missing subcommand"),
-        }),
-        Some(s) => Err(pico_args::Error::ArgumentParsingFailed {
-            cause: format!("unknown subcommand {}", s),
-        }),
+        s => s,
     }
 }
 
@@ -205,118 +140,97 @@ fn trim_path(path: &str) -> &str {
     path.trim_end_matches('/')
 }
 
+#[derive(Clap)]
+#[clap(author = clap::crate_authors!(), version = clap::crate_version!())]
+struct Opts {
+    #[clap(subcommand)]
+    subcommand: SubCommand,
+}
+
+#[derive(Clap)]
 enum SubCommand {
-    NowPlaying {
-        enable_image_cache: bool,
-        disable_formatting: bool,
+    /// Display the currently playing song.
+    Current {
+        #[clap(long)]
+        /// Fetch new album art from MPD, ignoring any cached images..
+        no_cache: bool,
+        #[clap(long)]
+        /// Print only plain text in a key=value format.
+        no_format: bool,
     },
+    /// Start playback.
     Play,
+    /// Pause playback.
     Pause,
+    /// Toggle between play/pause.
     Toggle,
-    Ls(Option<String>),
+    /// List items in path.
+    Ls { path: Option<String> },
+    /// Clear the current queue.
     Clear,
+    /// Skip to next song in queue.
     Next,
+    /// Go back to previous song in queue.
     Prev,
+    /// Stop playback.
     Stop,
-    Add(String),
-    Load(String),
-    Queue(bool),
-    Search(SearchType),
-    List {
-        tag: String,
-        search: SearchType,
+    /// Add items in path to queue.
+    Add { path: String },
+    /// Load playlist at path to queue.
+    Load { path: String },
+    /// Display the current queue.
+    Queue {
+        #[clap(long)]
+        /// Group the queue by artist/album, or composer/work.
+        group: bool,
     },
+    /// Search the MPD database.
+    Search {
+        #[clap(flatten)]
+        query: SearchQuery,
+    },
+    /// List all values for tag type, matching query.
+    List {
+        /// List values for this tag type
+        tag: String,
+        #[clap(flatten)]
+        query: SearchQuery,
+    },
+    /// Read raw metadata tags for file.
     ReadComments {
         file: String,
-        disable_formatting: bool,
+        #[clap(long)]
+        /// Print only plain text in a key=value format.
+        no_format: bool,
     },
+    /// Update the MPD database.
     Update,
+    /// Display MPD status.
     Status {
-        disable_formatting: bool,
+        #[clap(long)]
+        /// Print only plain text in a key=value format.
+        no_format: bool,
     },
-    Custom(PathBuf),
+    #[clap(external_subcommand)]
+    Custom(Vec<OsString>),
 }
 
-enum SearchType {
-    Expr(String),
-    TagValPairs(Vec<(String, String)>),
+#[derive(Clap)]
+struct SearchQuery {
+    /// Either a single value with a search expression, or a sequence of key-value pairs.
+    query: Vec<String>,
 }
 
-impl SearchType {
-    fn to_query(&self) -> mpd::Query {
-        match self {
-            SearchType::TagValPairs(pairs) => {
-                let mut query = mpd::FilterQuery::new();
-                for (k, v) in pairs {
-                    query.and(mpd::Term::Tag(&*k), v);
-                }
-                mpd::Query::Filters(query)
+impl SearchQuery {
+    fn to_mpd_query(&self) -> mpd::Query {
+        if self.query.len() == 1 {
+            mpd::Query::Expression(self.query[0].clone())
+        } else {
+            let mut query = mpd::FilterQuery::new();
+            for slice in self.query.chunks(2) {
+                query.and(mpd::Term::Tag(&*slice[0]), &*slice[1]);
             }
-            SearchType::Expr(s) => mpd::Query::Expression(s.clone()),
+            mpd::Query::Filters(query)
         }
     }
 }
-
-fn parse_search(mut pargs: pico_args::Arguments) -> Result<SearchType, pico_args::Error> {
-    match pargs.opt_value_from_str("--expr")? {
-        Some(s) => Ok(SearchType::Expr(s)),
-        None => {
-            let remaining = pargs.finish();
-            let remaining = remaining
-                .iter()
-                .map(|o| o.to_str())
-                .collect::<Option<Vec<_>>>()
-                .ok_or(pico_args::Error::NonUtf8Argument)?;
-
-            if remaining.len() % 2 != 0 {
-                return Err(pico_args::Error::ArgumentParsingFailed { cause : "Number of arguments to search was odd. Search expects key-value pairs, or an --expr option.".to_string() });
-            }
-
-            Ok(SearchType::TagValPairs(
-                remaining
-                    .chunks_exact(2)
-                    .map(|v| (v[0].to_string(), v[1].to_string()))
-                    .collect(),
-            ))
-        }
-    }
-}
-
-static HELP: &str = "\
-USAGE:
-  davis subcommand [options] [arguments]
-SUBCOMMANDS:
-  current --no-cache  Display currently playing song. If --no-cache is
-                      specified, davis will fetch albumart from MPD
-                      even if it exists in cache.
-  pause               Pause playback
-  play                Start playback
-  toggle              Toggle playback
-  ls [path]           List files in path
-  clear               Clear the queue (and stop playback)
-  next                Start playing next song on the queue
-  prev                Start playing next previous song on the queue
-  stop                Stop playback
-  add path            Add path to queue
-  load name           Replace queue with playlist
-  queue  [--group]    Display the current queue
-  search --expr expr  Find tracks matching expr. The expression expression
-                      format is available in the MPD documentation:
-                      https://www.musicpd.org/doc/html/protocol.html#filters
-  search [tag val]    Find tracks by sub-string search. Tag should be a
-                      tag recognized by MPD, and can be repeated multiple
-                      times. Example:
-                      davis search artist 'Miles Davis' album milestones
-  list [tag] [search] List all values for tag, for tracks matching search
-  readcomments [path] List raw tags for song at path
-  update              Update mpd database
-  status              Print current status
-  help                Print this help text
-
-OPTIONS:
-  --no-format             Makes current, readcomments, and status commands
-                          write unformatted key-value pairs separated by '='.
-  --group                 Causes the queue command to print songs grouped
-                          by their album and artist, or composer and work.
-  --no-custom-subcommands Disables custom subcommands.
-";

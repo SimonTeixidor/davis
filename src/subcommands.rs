@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::env;
 use std::ffi;
 use std::fs;
@@ -6,7 +5,7 @@ use std::iter::once;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
-pub fn find_subcommands() -> HashMap<String, PathBuf> {
+pub fn find_subcommand(name: &ffi::OsStr) -> Option<PathBuf> {
     let path_str = env::var("PATH").expect("$PATH was not set!");
     let home = env::var("HOME").expect("$HOME was not set!");
     let home_subcommands: PathBuf = [&*home, ".config", "davis", "bin"].iter().collect();
@@ -17,15 +16,12 @@ pub fn find_subcommands() -> HashMap<String, PathBuf> {
     paths
         .flat_map(|p| fs::read_dir(p).into_iter().flatten())
         .flat_map(|d| d.into_iter())
-        .filter_map(|d| {
-            let file_name = d.file_name().to_string_lossy().to_string();
-            if file_name.starts_with("davis-") && is_executable(&d) {
-                Some((file_name, d.path()))
-            } else {
-                None
-            }
+        .find(|d| {
+            let mut binary_name = ffi::OsString::from("davis-");
+            binary_name.push(name);
+            d.file_name() == binary_name && is_executable(&d)
         })
-        .collect()
+        .map(|d| d.path())
 }
 
 // copied from https://github.com/frewsxcv/rust-quale
