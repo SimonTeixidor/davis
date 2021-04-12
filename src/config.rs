@@ -19,6 +19,7 @@ pub struct Config {
     pub default_subcommand: Option<String>,
     pub tags: Vec<String>,
     pub width: usize,
+    pub grouped_queue: bool,
 }
 
 impl Default for Config {
@@ -28,6 +29,7 @@ impl Default for Config {
             default_subcommand: None,
             tags: DEFAULT_TAGS.iter().map(ToString::to_string).collect(),
             width: 50,
+            grouped_queue: false,
         }
     }
 }
@@ -54,6 +56,10 @@ pub fn get_config() -> Result<Config, Error> {
             conf.tags = tags.split(',').map(|s| s.trim().to_string()).collect();
         } else if let Some(width) = key_val("width", &line).and_then(|s| s.parse().ok()) {
             conf.width = width;
+        } else if let Some(grouped_queue) =
+            key_val("grouped_queue", &line).and_then(|s| s.parse().ok())
+        {
+            conf.grouped_queue = grouped_queue;
         }
     }
 

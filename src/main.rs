@@ -66,7 +66,11 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Stop => c.stop()?,
         SubCommand::Add { path } => c.add(&*trim_path(&*path))?,
         SubCommand::Load { path } => c.load(&*path, ..)?,
-        SubCommand::Queue { group } => queue::print(c.queue()?, c.currentsong()?, group)?,
+        SubCommand::Queue { group } => queue::print(
+            c.queue()?,
+            c.currentsong()?,
+            group.unwrap_or(conf.grouped_queue),
+        )?,
         SubCommand::Search { query } => {
             for song in c.search(&query.to_mpd_query(), None)? {
                 println!("{}", song.file);
@@ -181,8 +185,9 @@ enum SubCommand {
     /// Display the current queue.
     Queue {
         #[clap(long)]
-        /// Group the queue by artist/album, or composer/work.
-        group: bool,
+        /// Group the queue by artist/album, or composer/work group is true. This overrides
+        /// grouped_queue from the config file.
+        group: Option<bool>,
     },
     /// Search the MPD database.
     Search {
