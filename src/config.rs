@@ -18,12 +18,21 @@ static DEFAULT_TAGS: &[&str] = &[
 #[serde(default)]
 #[derive(Deserialize)]
 pub struct Config {
-    pub mpd_host: String,
-    pub default_subcommand: Option<String>,
+    pub hosts: Vec<Host>,
     pub tags: Vec<Tag>,
     pub width: usize,
     pub grouped_queue: bool,
     no_default_tags: bool,
+}
+
+impl Config {
+    pub fn default_mpd_host(&self) -> String {
+        if self.hosts.is_empty() {
+            return "127.0.0.1".to_string();
+        } else {
+            return self.hosts[0].host.clone();
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -32,11 +41,16 @@ pub struct Tag {
     pub label: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct Host {
+    pub host: String,
+    pub label: Option<String>,
+}
+
 impl Default for Config {
     fn default() -> Self {
         Config {
-            mpd_host: "127.0.0.1".to_string(),
-            default_subcommand: None,
+            hosts: Vec::new(),
             tags: DEFAULT_TAGS
                 .iter()
                 .map(|t| Tag {
@@ -85,13 +99,9 @@ pub fn get_config() -> Result<Config, Error> {
         _ => {}
     }
 
-    if let Some(mpd_host) = mpd_host_env_var() {
-        conf.mpd_host = mpd_host;
-    }
-
     Ok(conf)
 }
 
-fn mpd_host_env_var() -> Option<String> {
+pub fn mpd_host_env_var() -> Option<String> {
     std::env::var("MPD_HOST").ok()
 }

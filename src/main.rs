@@ -39,10 +39,24 @@ fn main() {
 
 fn try_main() -> Result<(), Error> {
     let conf = config::get_config()?;
-    let subcommand: SubCommand = parse_args(&conf);
-    let mpd_host = format!("{}:6600", conf.mpd_host);
-    let mut c = Client::new(TcpStream::connect(&mpd_host).context("connecting to MPD.")?)?;
-    match subcommand {
+    let opts = parse_args();
+    let mpd_host = match (opts.host, config::mpd_host_env_var()) {
+        (_, Some(host)) => host,
+        (Some(host), _) => {
+            if let Some(host) = conf.hosts.iter().find(|h| h.label.as_ref() == Some(&host)) {
+                host.host.clone()
+            } else {
+                host
+            }
+        }
+        _ => conf.default_mpd_host(),
+    };
+
+    let mpd_host_str = format!("{}:6600", mpd_host);
+
+    let mut c = Client::new(TcpStream::connect(&mpd_host_str).context("connecting to MPD.")?)?;
+
+    match opts.subcommand.expect("no subcommand, this is a bug.") {
         SubCommand::Current {
             no_cache,
             no_format,
@@ -109,7 +123,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Status { no_format } => status::status(&mut c, no_format, conf.width)?,
         SubCommand::Custom(args) => {
             Command::new(&args[0])
-                .env("MPD_HOST", conf.mpd_host)
+                .env("MPD_HOST", mpd_host)
                 .args(&args[1..])
                 .spawn()
                 .context("spawning child process")?
@@ -120,23 +134,31 @@ fn try_main() -> Result<(), Error> {
     Ok(())
 }
 
-fn parse_args(conf: &config::Config) -> SubCommand {
-    let mut args = env::args_os().collect::<Vec<_>>();
-    match &conf.default_subcommand {
-        Some(s) if args.len() == 1 => args.push(s.into()),
-        _ => (),
+fn parse_args() -> Opts {
+    let args = env::args_os().collect::<Vec<_>>();
+    let mut opts = Opts::parse_from(args);
+    if opts.subcommand.is_none() {
+        opts.subcommand = Some(SubCommand::Current {
+            no_cache: false,
+            no_format: false,
+        });
     }
-    match Opts::parse_from(args).subcommand {
-        SubCommand::Custom(mut v) => {
+
+    match &opts.subcommand {
+        Some(SubCommand::Custom(v)) => {
+            let mut v = v.clone();
             if let Some(subcommand) = find_subcommand(&*v[0]) {
                 v[0] = subcommand.as_os_str().to_owned();
-                SubCommand::Custom(v)
+                Opts {
+                    host: opts.host,
+                    subcommand: Some(SubCommand::Custom(v)),
+                }
             } else {
                 eprintln!("{} is not a known subcommand.", v[0].to_string_lossy());
                 std::process::exit(1);
             }
         }
-        s => s,
+        _ => opts,
     }
 }
 
@@ -147,8 +169,11 @@ fn trim_path(path: &str) -> &str {
 #[derive(Clap)]
 #[clap(author = clap::crate_authors!(), version = clap::crate_version!())]
 struct Opts {
+    #[clap(long)]
+    /// The MPD server, can be specified using IP/hostname, or a label defined in the config file.
+    host: Option<String>,
     #[clap(subcommand)]
-    subcommand: SubCommand,
+    subcommand: Option<SubCommand>,
 }
 
 #[derive(Clap)]
