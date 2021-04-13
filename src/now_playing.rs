@@ -1,5 +1,5 @@
 use crate::ansi::{is_dumb_terminal, FormattedString, Style};
-use crate::config::Config;
+use crate::config::{Config, Tag};
 use crate::error::Error;
 use crate::filecache;
 use crate::table::{Table, TableRow};
@@ -51,14 +51,15 @@ pub fn now_playing(
     let table_rows = conf
         .tags
         .iter()
-        .map(|tag| {
+        .map(|Tag { tag, label }| {
             tags.get_option(&*tag)
                 .as_ref()
                 .iter()
                 .flat_map(|values| {
                     values.iter().map(|value| {
                         TableRow::new(
-                            FormattedString::new(&*tag).style(Style::Bold),
+                            FormattedString::new(&*label.as_ref().unwrap_or(&tag))
+                                .style(Style::Bold),
                             FormattedString::new(&*value),
                         )
                     })

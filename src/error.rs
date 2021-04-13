@@ -9,11 +9,18 @@ pub enum Error {
     },
     ImageError(image::ImageError),
     LiqError(imagequant::liq_error),
+    TomlError(toml::de::Error),
 }
 
 impl From<image::ImageError> for Error {
     fn from(e: image::ImageError) -> Self {
         Error::ImageError(e)
+    }
+}
+
+impl From<toml::de::Error> for Error {
+    fn from(e: toml::de::Error) -> Self {
+        Error::TomlError(e)
     }
 }
 
@@ -65,6 +72,9 @@ impl fmt::Display for Error {
             }
             Error::LiqError(e) => {
                 write!(f, "Image Error: {}:", e)
+            }
+            Error::TomlError(e) => {
+                write!(f, "Toml Error: {}:", e)
             }
         }
     }
