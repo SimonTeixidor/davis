@@ -135,6 +135,8 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Albumart { song_path, output } => {
             albumart::fetch_albumart(&mut c, song_path.as_ref().map(|s| &**s), &*output)?;
         }
+        SubCommand::Mv { from, to } => c.move_range(from..=from, to)?,
+        SubCommand::Del { index } => c.delete(index..=index)?,
         SubCommand::Custom(args) => {
             log::trace!("Spawning process for custom subcommand: {:?}", args);
             Command::new(&args[0])
@@ -265,6 +267,18 @@ enum SubCommand {
         /// Path to a file where the image will be stored. The image can be written to stdout by
         /// supplying a '-' character.
         output: String,
+    },
+    /// Move song in queue.
+    Mv {
+        /// Queue index of song to move
+        from: u32,
+        /// Position in queue to move song to
+        to: usize,
+    },
+    /// Remove song from queue.
+    Del {
+        /// Queue index
+        index: u32,
     },
     #[clap(external_subcommand)]
     Custom(Vec<OsString>),
