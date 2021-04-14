@@ -20,7 +20,7 @@ codegen-units = 1
 [dependencies]
 libc = "0.2"
 mpd = { git = "https://github.com/SimonPersson/rust-mpd.git" }
-textwrap = { version = "0.13", default-features = false }
+textwrap = { version = "0.13", default-features = false, features = ["unicode-width"] }
 clap = "3.0.0-beta.2"
 image = { version = "0.23", default-features = false, features = ["jpeg", "png"] }
 imagequant  = "3"
