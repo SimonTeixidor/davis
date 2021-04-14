@@ -31,7 +31,7 @@ fn main() {
     match try_main() {
         Ok(_) => (),
         Err(e) => {
-            println!("{:?}", e);
+            println!("{}", e);
             std::process::exit(1);
         }
     }
@@ -54,7 +54,7 @@ fn try_main() -> Result<(), Error> {
 
     let mpd_host_str = format!("{}:6600", mpd_host);
 
-    let mut c = Client::new(TcpStream::connect(&mpd_host_str).context("connecting to MPD.")?)?;
+    let mut c = Client::new(TcpStream::connect(&mpd_host_str).context("connecting to MPD")?)?;
 
     match opts.subcommand.expect("no subcommand, this is a bug.") {
         SubCommand::Current {

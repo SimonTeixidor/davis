@@ -62,19 +62,19 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::MpdError(e) => {
-                write!(f, "MPD Error: {}", e)
+                write!(f, "An error occured when communicating with MPD: {}", e)
             }
             Error::IoError { error, context } => {
-                write!(f, "IoError: {}, context: {}", error, context)
+                write!(f, "I/O error when {}:\n{}", context, error)
             }
             Error::ImageError(e) => {
-                write!(f, "Image Error: {}:", e)
+                write!(f, "An error occured when processing the album art: {}", e)
             }
             Error::LiqError(e) => {
-                write!(f, "Image Error: {}:", e)
+                write!(f, "An error occured when processing the album art: {}", e)
             }
             Error::TomlError(e) => {
-                write!(f, "Toml Error: {}:", e)
+                write!(f, "Couldn't parse the configuration file:\n{}", e)
             }
         }
     }
