@@ -7,6 +7,7 @@ use std::ffi::OsString;
 use std::net::TcpStream;
 use std::process::Command;
 
+mod albumart;
 mod ansi;
 mod config;
 mod error;
@@ -121,6 +122,9 @@ fn try_main() -> Result<(), Error> {
             c.update()?;
         }
         SubCommand::Status { no_format } => status::status(&mut c, no_format, conf.width)?,
+        SubCommand::Albumart { song_path, output } => {
+            albumart::fetch_albumart(&mut c, song_path.as_ref().map(|s| &**s), &*output)?;
+        }
         SubCommand::Custom(args) => {
             Command::new(&args[0])
                 .env("MPD_HOST", mpd_host)
@@ -240,6 +244,15 @@ enum SubCommand {
         #[clap(long)]
         /// Print only plain text in a key=value format.
         no_format: bool,
+    },
+    /// Download albumart for track.
+    Albumart {
+        /// The song to fetch albumart for. Will use currently playing song if not provided.
+        song_path: Option<String>,
+        #[clap(long, short)]
+        /// Path to a file where the image will be stored. The image can be written to stdout by
+        /// supplying a '-' character.
+        output: String,
     },
     #[clap(external_subcommand)]
     Custom(Vec<OsString>),
