@@ -12,6 +12,7 @@ mod ansi;
 mod config;
 mod error;
 mod filecache;
+mod logger;
 mod now_playing;
 mod queue;
 mod status;
@@ -32,21 +33,31 @@ fn main() {
     match try_main() {
         Ok(_) => (),
         Err(e) => {
-            println!("{}", e);
+            eprintln!("{}", e);
             std::process::exit(1);
         }
     }
 }
 
 fn try_main() -> Result<(), Error> {
-    let conf = config::get_config()?;
     let opts = parse_args();
+    let conf = config::get_config()?;
+
     let mpd_host = match (opts.host, config::mpd_host_env_var()) {
-        (_, Some(host)) => host,
+        (_, Some(host)) => {
+            log::trace!("Found MPD_HOST environment variable: {}", host);
+            host
+        }
         (Some(host), _) => {
-            if let Some(host) = conf.hosts.iter().find(|h| h.label.as_ref() == Some(&host)) {
-                host.host.clone()
+            if let Some(host_config) = conf.hosts.iter().find(|h| h.label.as_ref() == Some(&host)) {
+                log::trace!(
+                    "MPD host passed as label {}, and resolved to host: {}",
+                    host,
+                    host_config.host
+                );
+                host_config.host.clone()
             } else {
+                log::trace!("Using MPD host {} from command line", host);
                 host
             }
         }
@@ -58,10 +69,9 @@ fn try_main() -> Result<(), Error> {
     let mut c = Client::new(TcpStream::connect(&mpd_host_str).context("connecting to MPD")?)?;
 
     match opts.subcommand.expect("no subcommand, this is a bug.") {
-        SubCommand::Current {
-            no_cache,
-            no_format,
-        } => now_playing::now_playing(&mut c, !no_cache, no_format, &conf)?,
+        SubCommand::Current { no_cache, plain } => {
+            now_playing::now_playing(&mut c, !no_cache, plain, &conf)?
+        }
         SubCommand::Play => c.play()?,
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
@@ -96,7 +106,7 @@ fn try_main() -> Result<(), Error> {
                 println!("{}", val);
             }
         }
-        SubCommand::ReadComments { file, no_format } => {
+        SubCommand::ReadComments { file, plain } => {
             let table_rows = c
                 .readcomments(&*trim_path(&*file))?
                 .collect::<Result<Vec<_>, _>>()?;
@@ -113,7 +123,7 @@ fn try_main() -> Result<(), Error> {
                 "{:width$}",
                 table::Table {
                     rows: &*table_rows,
-                    disable_formatting: no_format
+                    disable_formatting: plain
                 },
                 width = conf.width
             );
@@ -121,11 +131,12 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Update => {
             c.update()?;
         }
-        SubCommand::Status { no_format } => status::status(&mut c, no_format, conf.width)?,
+        SubCommand::Status { plain } => status::status(&mut c, plain, conf.width)?,
         SubCommand::Albumart { song_path, output } => {
             albumart::fetch_albumart(&mut c, song_path.as_ref().map(|s| &**s), &*output)?;
         }
         SubCommand::Custom(args) => {
+            log::trace!("Spawning process for custom subcommand: {:?}", args);
             Command::new(&args[0])
                 .env("MPD_HOST", mpd_host)
                 .args(&args[1..])
@@ -141,29 +152,27 @@ fn try_main() -> Result<(), Error> {
 fn parse_args() -> Opts {
     let args = env::args_os().collect::<Vec<_>>();
     let mut opts = Opts::parse_from(args);
+    logger::Logger(opts.verbose).init();
     if opts.subcommand.is_none() {
+        log::trace!("No subcommand specified, defaulting to current.");
         opts.subcommand = Some(SubCommand::Current {
             no_cache: false,
-            no_format: false,
+            plain: false,
         });
     }
 
-    match &opts.subcommand {
-        Some(SubCommand::Custom(v)) => {
-            let mut v = v.clone();
-            if let Some(subcommand) = find_subcommand(&*v[0]) {
-                v[0] = subcommand.as_os_str().to_owned();
-                Opts {
-                    host: opts.host,
-                    subcommand: Some(SubCommand::Custom(v)),
-                }
-            } else {
-                eprintln!("{} is not a known subcommand.", v[0].to_string_lossy());
-                std::process::exit(1);
-            }
+    if let Some(SubCommand::Custom(v)) = &opts.subcommand {
+        let mut v = v.clone();
+        if let Some(subcommand) = find_subcommand(&*v[0]) {
+            log::trace!("Found custom subcommand {:?}", subcommand);
+            v[0] = subcommand.as_os_str().to_owned();
+            opts.subcommand = Some(SubCommand::Custom(v));
+        } else {
+            eprintln!("{} is not a known subcommand.", v[0].to_string_lossy());
+            std::process::exit(1);
         }
-        _ => opts,
     }
+    opts
 }
 
 fn trim_path(path: &str) -> &str {
@@ -176,6 +185,9 @@ struct Opts {
     #[clap(long, short)]
     /// The MPD server, can be specified using IP/hostname, or a label defined in the config file.
     host: Option<String>,
+    #[clap(long, short)]
+    /// Enable verbose output.
+    verbose: bool,
     #[clap(subcommand)]
     subcommand: Option<SubCommand>,
 }

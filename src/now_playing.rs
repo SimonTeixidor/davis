@@ -17,8 +17,13 @@ pub fn now_playing(
 ) -> Result<(), Error> {
     let winsize = terminal_dimensions::terminal_size();
     let char_width = if winsize.ws_col != 0 && winsize.ws_xpixel != 0 {
+        log::trace!(
+            "Calculated terminal character width to {}px",
+            winsize.ws_xpixel / winsize.ws_col
+        );
         winsize.ws_xpixel / winsize.ws_col
     } else {
+        log::trace!("Terminal reports 0 width, defaulting to character width of 10px");
         10
     };
     let image_width = conf.width as u32 * char_width as u32;
@@ -41,10 +46,10 @@ pub fn now_playing(
     if !is_dumb_terminal() {
         match fetch_albumart(&song, client, image_width, cache) {
             Ok(mut albumart) => match std::io::copy(&mut albumart, &mut std::io::stdout().lock()) {
-                Err(e) => println!("Failed to write album art to stdout: {}", e),
+                Err(e) => log::error!("Failed to write album art to stdout: {}", e),
                 Ok(_) => (),
             },
-            Err(e) => println!("Failed to fetch album art: {}", e),
+            Err(e) => log::error!("Failed to fetch album art: {}", e),
         }
     }
 

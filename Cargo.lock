@@ -256,6 +256,7 @@ dependencies = [
  "image",
  "imagequant",
  "libc",
+ "log",
  "mpd",
  "rgb",
  "serde",

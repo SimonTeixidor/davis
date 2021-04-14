@@ -11,16 +11,24 @@ pub fn find_subcommand(name: &ffi::OsStr) -> Option<PathBuf> {
     let home_subcommands: PathBuf = [&*home, ".config", "davis", "bin"].iter().collect();
     let etc_subcommands: PathBuf = ["/", "etc", "davis", "bin"].iter().collect();
     let custom_dirs = once(home_subcommands).chain(once(etc_subcommands.clone()));
-    let paths = env::split_paths(&*path_str).chain(custom_dirs);
+    let paths = env::split_paths(&*path_str)
+        .chain(custom_dirs)
+        .collect::<Vec<_>>();
+
+    let mut binary_name = ffi::OsString::from("davis-");
+    binary_name.push(name);
+
+    log::trace!(
+        "Searching for subcommand with name {:?} in paths {:?}",
+        binary_name,
+        paths
+    );
 
     paths
+        .into_iter()
         .flat_map(|p| fs::read_dir(p).into_iter().flatten())
         .flat_map(|d| d.into_iter())
-        .find(|d| {
-            let mut binary_name = ffi::OsString::from("davis-");
-            binary_name.push(name);
-            d.file_name() == binary_name && is_executable(&d)
-        })
+        .find(|d| d.file_name() == binary_name && is_executable(&d))
         .map(|d| d.path())
 }
 
