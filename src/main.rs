@@ -173,7 +173,7 @@ fn trim_path(path: &str) -> &str {
 #[derive(Clap)]
 #[clap(author = clap::crate_authors!(), version = clap::crate_version!())]
 struct Opts {
-    #[clap(long)]
+    #[clap(long, short)]
     /// The MPD server, can be specified using IP/hostname, or a label defined in the config file.
     host: Option<String>,
     #[clap(subcommand)]
@@ -184,12 +184,12 @@ struct Opts {
 enum SubCommand {
     /// Display the currently playing song.
     Current {
-        #[clap(long)]
+        #[clap(long, short)]
         /// Fetch new album art from MPD, ignoring any cached images..
         no_cache: bool,
-        #[clap(long)]
+        #[clap(long, short)]
         /// Print only plain text in a key=value format.
-        no_format: bool,
+        plain: bool,
     },
     /// Start playback.
     Play,
@@ -213,7 +213,7 @@ enum SubCommand {
     Load { path: String },
     /// Display the current queue.
     Queue {
-        #[clap(long)]
+        #[clap(long, short)]
         /// Group the queue by artist/album, or composer/work group is true. This overrides
         /// grouped_queue from the config file.
         group: Option<bool>,
@@ -233,17 +233,17 @@ enum SubCommand {
     /// Read raw metadata tags for file.
     ReadComments {
         file: String,
-        #[clap(long)]
+        #[clap(long, short)]
         /// Print only plain text in a key=value format.
-        no_format: bool,
+        plain: bool,
     },
     /// Update the MPD database.
     Update,
     /// Display MPD status.
     Status {
-        #[clap(long)]
+        #[clap(long, short)]
         /// Print only plain text in a key=value format.
-        no_format: bool,
+        plain: bool,
     },
     /// Download albumart for track.
     Albumart {
