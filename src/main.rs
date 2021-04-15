@@ -52,7 +52,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Current { no_cache, plain } => {
             now_playing::now_playing(&mut c, !no_cache, plain, &conf)?
         }
-        SubCommand::Play { position: Some(id) } => c.play_from_position(id)?,
+        SubCommand::Play { position: Some(id) } => c.play_from_position(id - 1)?,
         SubCommand::Play { position: None } => c.play()?,
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
@@ -116,8 +116,8 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Albumart { song_path, output } => {
             albumart::fetch_albumart(&mut c, song_path.as_ref().map(|s| &**s), &*output)?;
         }
-        SubCommand::Mv { from, to } => c.move_range(from..=from, to)?,
-        SubCommand::Del { index } => c.delete(index..=index)?,
+        SubCommand::Mv { from, to } => c.move_range(from - 1..=from - 1, to - 1)?,
+        SubCommand::Del { index } => c.delete(index - 1..=index - 1)?,
         SubCommand::Custom(args) => {
             log::trace!("Spawning process for custom subcommand: {:?}", args);
             Command::new(&args[0])
