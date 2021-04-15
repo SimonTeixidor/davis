@@ -13,7 +13,22 @@ pub fn print(queue: Vec<Song>, current: Option<Song>, group: bool) -> Result<(),
 
 fn print_grouped(queue: Vec<Song>, current: Option<Song>) -> Result<(), Error> {
     let mut group = None;
-    for song in queue {
+
+    let max_movement_len = queue
+        .iter()
+        .filter_map(|s| {
+            let tags = Tags::from_song(s);
+            tags.get("movementnumber")
+                .into_iter()
+                .next()
+                .map(|s| s.len())
+        })
+        .max()
+        .unwrap_or(3);
+
+    let max_queue_position_len = ((queue.len() + 1) as f64).log10() as usize;
+
+    for (i, song) in queue.into_iter().enumerate() {
         let tags = Tags::from_song(&song);
         let new_group = if let (Some(work), Some(composer)) = (
             tags.get_option_joined("work"),
@@ -37,34 +52,38 @@ fn print_grouped(queue: Vec<Song>, current: Option<Song>) -> Result<(), Error> {
             _ => {}
         }
 
-        let prefix = if group.is_some() { "  " } else { "" };
-
         let title = if let (Some(movementnumber), Some(movement)) = (
             tags.get_option_joined("movementnumber"),
             tags.get_option_joined("movement"),
         ) {
-            format!("{}. {}", movementnumber, movement)
+            format!(
+                "{:>width$}. {}",
+                movementnumber,
+                movement,
+                width = max_movement_len
+            )
         } else if let (Some(artist), Some(title)) = (song.artist, song.title) {
             format!("{} - {}", artist, title)
         } else {
             song.file
         };
         let title = if current.as_ref().and_then(|s| s.place) == song.place {
-            format!(
-                "{}{}",
-                prefix,
-                FormattedString::new(&*title).style(Style::Bold)
-            )
+            format!("{}", FormattedString::new(&*title).style(Style::Bold))
         } else {
-            format!("{}{}", prefix, title)
+            format!("{}", title)
         };
-        println!("{}", title);
+        println!(
+            "{:<width$} {}",
+            format!("{}.", i + 1),
+            title,
+            width = max_queue_position_len + 2
+        );
     }
     Ok(())
 }
 
 fn print_flat(queue: Vec<Song>, current: Option<Song>) -> Result<(), Error> {
-    for song in queue {
+    for (i, song) in queue.into_iter().enumerate() {
         let title = match (song.artist, song.title) {
             (Some(artist), Some(title)) => format!("{} - {}", artist, title),
             _ => song.file,
@@ -74,7 +93,7 @@ fn print_flat(queue: Vec<Song>, current: Option<Song>) -> Result<(), Error> {
         } else {
             title
         };
-        println!("{}", title);
+        println!("{:<3} {}", format!("{}.", i + 1), title);
     }
     Ok(())
 }
