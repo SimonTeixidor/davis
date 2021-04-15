@@ -43,28 +43,8 @@ fn try_main() -> Result<(), Error> {
     let opts = parse_args();
     let conf = config::get_config()?;
 
-    let mpd_host = match (opts.host, config::mpd_host_env_var()) {
-        (_, Some(host)) => {
-            log::trace!("Found MPD_HOST environment variable: {}", host);
-            host
-        }
-        (Some(host), _) => {
-            if let Some(host_config) = conf.hosts.iter().find(|h| h.label.as_ref() == Some(&host)) {
-                log::trace!(
-                    "MPD host passed as label {}, and resolved to host: {}",
-                    host,
-                    host_config.host
-                );
-                host_config.host.clone()
-            } else {
-                log::trace!("Using MPD host {} from command line", host);
-                host
-            }
-        }
-        _ => conf.default_mpd_host(),
-    };
-
-    let mpd_host_str = format!("{}:6600", mpd_host);
+    let mpd_host = mpd_host(&opts, &conf);
+    let mpd_host_str = format!("{}:6600", &mpd_host);
 
     let mut c = Client::new(TcpStream::connect(&mpd_host_str).context("connecting to MPD")?)?;
 
@@ -301,5 +281,44 @@ impl SearchQuery {
             }
             mpd::Query::Filters(query)
         }
+    }
+}
+
+fn mpd_host(opts: &Opts, conf: &config::Config) -> String {
+    if let Some(host) = config::mpd_host_env_var() {
+        log::trace!("Found MPD_HOST environment variable: {}", host);
+        lookup_mpd_host(&*host, &conf)
+    } else if let Some(host) = &opts.host {
+        if let Some(host_config) = conf.hosts.iter().find(|h| h.label.as_ref() == Some(&host)) {
+            log::trace!(
+                "MPD host passed as label {}, and resolved to host: {}",
+                host,
+                host_config.host
+            );
+            host_config.host.clone()
+        } else {
+            log::trace!("Using MPD host {} from command line", host);
+            host.clone()
+        }
+    } else {
+        conf.default_mpd_host()
+    }
+}
+
+fn lookup_mpd_host(host: &str, conf: &config::Config) -> String {
+    if let Some(host_config) = conf
+        .hosts
+        .iter()
+        .find(|h| h.label.as_ref().map(|s| &**s) == Some(host))
+    {
+        log::trace!(
+            "MPD host passed as label {}, and resolved to address: {}",
+            host,
+            host_config.host
+        );
+        host_config.host.clone()
+    } else {
+        log::trace!("MPD host is not a label, assuming address: {}", host);
+        host.to_string()
     }
 }
