@@ -52,7 +52,8 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Current { no_cache, plain } => {
             now_playing::now_playing(&mut c, !no_cache, plain, &conf)?
         }
-        SubCommand::Play => c.play()?,
+        SubCommand::Play { position: Some(id) } => c.play_from_position(id)?,
+        SubCommand::Play { position: None } => c.play()?,
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
         SubCommand::Ls { path } => {
@@ -186,7 +187,10 @@ enum SubCommand {
         plain: bool,
     },
     /// Start playback.
-    Play,
+    Play {
+        /// Queue position to start playing from, defaults to 1.
+        position: Option<u32>,
+    },
     /// Pause playback.
     Pause,
     /// Toggle between play/pause.
