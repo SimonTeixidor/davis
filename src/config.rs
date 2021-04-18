@@ -29,13 +29,13 @@ impl Config {
     pub fn default_mpd_host(&self) -> String {
         if self.hosts.is_empty() {
             log::trace!("Found no host in config file, defaulting to 127.0.0.1.");
-            return "127.0.0.1".to_string();
+            "127.0.0.1".to_string()
         } else {
             log::trace!(
                 "Uses first host from config as default: {}",
                 self.hosts[0].host
             );
-            return self.hosts[0].host.clone();
+            self.hosts[0].host.clone()
         }
     }
 }
@@ -78,7 +78,7 @@ pub fn get_config() -> Result<Config, Error> {
     let mut conf = Config::default();
 
     match File::open(&home_config_path)
-        .or(File::open(&etc_config_path))
+        .or_else(|_| File::open(&etc_config_path))
         .context("opening config file")
         .and_then(|mut f| {
             log::trace!("Read config from {:?}", f);

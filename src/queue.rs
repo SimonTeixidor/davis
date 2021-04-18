@@ -1,9 +1,8 @@
 use crate::ansi::{FormattedString, Style};
-use crate::error::Error;
 use crate::tags::Tags;
 use mpd::Song;
 
-pub fn print(queue: Vec<Song>, current: Option<Song>, group: bool) -> Result<(), Error> {
+pub fn print(queue: Vec<Song>, current: Option<Song>, group: bool) {
     if group {
         print_grouped(queue, current)
     } else {
@@ -11,7 +10,7 @@ pub fn print(queue: Vec<Song>, current: Option<Song>, group: bool) -> Result<(),
     }
 }
 
-fn print_grouped(queue: Vec<Song>, current: Option<Song>) -> Result<(), Error> {
+fn print_grouped(queue: Vec<Song>, current: Option<Song>) {
     let mut group = None;
 
     let max_movement_len = queue
@@ -70,7 +69,7 @@ fn print_grouped(queue: Vec<Song>, current: Option<Song>) -> Result<(), Error> {
         let title = if current.as_ref().and_then(|s| s.place) == song.place {
             format!("{}", FormattedString::new(&*title).style(Style::Bold))
         } else {
-            format!("{}", title)
+            title.to_string()
         };
         println!(
             "{:<width$} {}",
@@ -79,10 +78,9 @@ fn print_grouped(queue: Vec<Song>, current: Option<Song>) -> Result<(), Error> {
             width = max_queue_position_len + 2
         );
     }
-    Ok(())
 }
 
-fn print_flat(queue: Vec<Song>, current: Option<Song>) -> Result<(), Error> {
+fn print_flat(queue: Vec<Song>, current: Option<Song>) {
     for (i, song) in queue.into_iter().enumerate() {
         let title = match (song.artist, song.title) {
             (Some(artist), Some(title)) => format!("{} - {}", artist, title),
@@ -95,5 +93,4 @@ fn print_flat(queue: Vec<Song>, current: Option<Song>) -> Result<(), Error> {
         };
         println!("{:<3} {}", format!("{}.", i + 1), title);
     }
-    Ok(())
 }

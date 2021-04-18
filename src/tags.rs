@@ -26,7 +26,7 @@ impl Tags {
         if tags.is_empty() {
             tags.extend(tag_filter(&*self.raw_comments, tag));
         }
-        tags.sort();
+        tags.sort_unstable();
         tags.dedup();
         tags
     }

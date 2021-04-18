@@ -4,7 +4,7 @@ use std::mem;
 pub fn terminal_size() -> winsize {
     unsafe {
         let mut winsize = mem::zeroed();
-        ioctl(STDOUT_FILENO, TIOCGWINSZ.into(), &mut winsize);
+        ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut winsize);
         winsize
     }
 }

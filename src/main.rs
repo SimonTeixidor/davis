@@ -76,7 +76,7 @@ fn try_main() -> Result<(), Error> {
             c.queue()?,
             c.currentsong()?,
             group.unwrap_or(conf.grouped_queue),
-        )?,
+        ),
         SubCommand::Search { query } => {
             for song in c.search(&query.to_mpd_query(), None)? {
                 println!("{}", song.file);
@@ -114,7 +114,7 @@ fn try_main() -> Result<(), Error> {
         }
         SubCommand::Status { plain } => status::status(&mut c, plain, conf.width)?,
         SubCommand::Albumart { song_path, output } => {
-            albumart::fetch_albumart(&mut c, song_path.as_ref().map(|s| &**s), &*output)?;
+            albumart::fetch_albumart(&mut c, song_path.as_deref(), &*output)?;
         }
         SubCommand::Mv { from, to } => c.move_range(from - 1..=from - 1, to - 1)?,
         SubCommand::Del { index } => c.delete(index - 1..=index - 1)?,
@@ -310,11 +310,7 @@ fn mpd_host(opts: &Opts, conf: &config::Config) -> String {
 }
 
 fn lookup_mpd_host(host: &str, conf: &config::Config) -> String {
-    if let Some(host_config) = conf
-        .hosts
-        .iter()
-        .find(|h| h.label.as_ref().map(|s| &**s) == Some(host))
-    {
+    if let Some(host_config) = conf.hosts.iter().find(|h| h.label.as_deref() == Some(host)) {
         log::trace!(
             "MPD host passed as label {}, and resolved to address: {}",
             host,

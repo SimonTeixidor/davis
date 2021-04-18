@@ -93,10 +93,7 @@ impl<'a> fmt::Display for FormattedString<'a> {
 }
 
 pub fn is_dumb_terminal() -> bool {
-    let is_dumb = match env::var("TERM") {
-        Ok(s) if s == "dumb" => true,
-        _ => false,
-    };
+    let is_dumb = matches!(env::var("TERM"), Ok(s) if s == "dumb");
     let has_no_color = env::var("NO_COLOR").is_ok();
 
     is_dumb || has_no_color

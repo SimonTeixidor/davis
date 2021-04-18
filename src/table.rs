@@ -31,7 +31,7 @@ impl<'a> fmt::Display for Table<'a> {
 
         for (key_idx, TableRow { key, val }) in self.rows.iter().enumerate() {
             if self.disable_formatting {
-                if !(key_idx == 0) {
+                if key_idx != 0 {
                     writeln!(formatter,)?;
                 }
                 write!(formatter, "{}={}", key.string, val.string)?;

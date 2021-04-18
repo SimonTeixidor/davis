@@ -10,7 +10,7 @@ pub fn find_subcommand(name: &ffi::OsStr) -> Option<PathBuf> {
     let home = env::var("HOME").expect("$HOME was not set!");
     let home_subcommands: PathBuf = [&*home, ".config", "davis", "bin"].iter().collect();
     let etc_subcommands: PathBuf = ["/", "etc", "davis", "bin"].iter().collect();
-    let custom_dirs = once(home_subcommands).chain(once(etc_subcommands.clone()));
+    let custom_dirs = once(home_subcommands).chain(once(etc_subcommands));
     let paths = env::split_paths(&*path_str)
         .chain(custom_dirs)
         .collect::<Vec<_>>();

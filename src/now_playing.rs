@@ -45,10 +45,11 @@ pub fn now_playing(
 
     if !is_dumb_terminal() {
         match fetch_albumart(&song, client, image_width, cache) {
-            Ok(mut albumart) => match std::io::copy(&mut albumart, &mut std::io::stdout().lock()) {
-                Err(e) => log::error!("Failed to write album art to stdout: {}", e),
-                Ok(_) => (),
-            },
+            Ok(mut albumart) => {
+                if let Err(e) = std::io::copy(&mut albumart, &mut std::io::stdout().lock()) {
+                    log::error!("Failed to write album art to stdout: {}", e);
+                }
+            }
             Err(e) => log::error!("Failed to fetch album art: {}", e),
         }
     }
@@ -128,7 +129,7 @@ fn classical_work_description(tags: &Tags, width: usize) -> Option<String> {
             tags.get_option_joined("MOVEMENT")
                 .map(|m| format!("{}. {}", n, m))
         })
-        .or(tags.get_option_joined("TITLE").map(String::from))?;
+        .or_else(|| tags.get_option_joined("TITLE").map(String::from))?;
 
     Some(format!(
         "{}\n{}\n{}\n",

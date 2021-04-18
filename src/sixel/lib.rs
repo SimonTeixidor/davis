@@ -1,5 +1,4 @@
 use image::{imageops::FilterType, DynamicImage};
-use imagequant;
 use std::io::Write;
 
 pub fn to_sixel(width: u32, image: &DynamicImage) -> Result<Vec<u8>, Error> {
