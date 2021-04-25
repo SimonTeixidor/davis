@@ -61,8 +61,8 @@ fn print_grouped(queue: Vec<Song>, current: Option<Song>) {
                 movement,
                 width = max_movement_len
             )
-        } else if let (Some(artist), Some(title)) = (song.artist, song.title) {
-            format!("{} - {}", artist, title)
+        } else if let Some(title) = song.title {
+            title
         } else {
             song.file
         };
