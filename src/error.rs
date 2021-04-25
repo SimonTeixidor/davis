@@ -10,6 +10,7 @@ pub enum Error {
     ImageError(image::ImageError),
     LiqError(imagequant::liq_error),
     TomlError(toml::de::Error),
+    ParseSeekError(&'static str),
 }
 
 impl From<image::ImageError> for Error {
@@ -75,6 +76,9 @@ impl fmt::Display for Error {
             }
             Error::TomlError(e) => {
                 write!(f, "Couldn't parse the configuration file:\n{}", e)
+            }
+            Error::ParseSeekError(e) => {
+                write!(f, "Couldn't parse seek command: {}", e)
             }
         }
     }

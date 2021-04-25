@@ -15,6 +15,7 @@ mod filecache;
 mod logger;
 mod now_playing;
 mod queue;
+mod seek;
 mod status;
 mod subcommands;
 mod table;
@@ -118,6 +119,7 @@ fn try_main() -> Result<(), Error> {
         }
         SubCommand::Mv { from, to } => c.move_range(from - 1..=from - 1, to - 1)?,
         SubCommand::Del { index } => c.delete(index - 1..=index - 1)?,
+        SubCommand::Seek { position } => seek::seek(&mut c, position)?,
         SubCommand::Custom(args) => {
             log::trace!("Spawning process for custom subcommand: {:?}", args);
             Command::new(&args[0])
@@ -263,6 +265,12 @@ enum SubCommand {
     Del {
         /// Queue index
         index: u32,
+    },
+    /// Set current playback time.
+    Seek {
+        /// Position to seek to, expressed in [+-][[hh:]:mm]:ss format. If + or - is used, the seek
+        /// is done relative to the current positon.
+        position: seek::SeekArg,
     },
     #[clap(external_subcommand)]
     Custom(Vec<OsString>),
