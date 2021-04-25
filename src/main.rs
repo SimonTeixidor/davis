@@ -18,6 +18,7 @@ mod queue;
 mod seek;
 mod status;
 mod subcommands;
+mod tab;
 mod table;
 mod tags;
 mod terminal_dimensions;
@@ -120,6 +121,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Mv { from, to } => c.move_range(from - 1..=from - 1, to - 1)?,
         SubCommand::Del { index } => c.delete(index - 1..=index - 1)?,
         SubCommand::Seek { position } => seek::seek(&mut c, position)?,
+        SubCommand::Tab { path } => tab::complete(&mut c, &*path)?,
         SubCommand::Custom(args) => {
             log::trace!("Spawning process for custom subcommand: {:?}", args);
             Command::new(&args[0])
@@ -272,6 +274,8 @@ enum SubCommand {
         /// is done relative to the current positon.
         position: seek::SeekArg,
     },
+    /// List all files prefixed by path, used for tab completion.
+    Tab { path: String },
     #[clap(external_subcommand)]
     Custom(Vec<OsString>),
 }
