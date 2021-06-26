@@ -29,6 +29,17 @@ toml = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 
+[build-dependencies]
+rgb  = "0.8"
+image = { version = "0.23", default-features = false, features = ["jpeg", "png"] }
+toml = "0.5"
+clap_generate = "3.0.0-beta.2"
+imagequant  = "3"
+clap = "3.0.0-beta.2"
+log = "0.4"
+libc = "0.2"
+mpd = { git = "https://github.com/SimonPersson/rust-mpd.git" }
+
 [dev-dependencies]
 criterion = "0.3"
 
