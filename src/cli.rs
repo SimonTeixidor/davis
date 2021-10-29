@@ -79,12 +79,7 @@ pub enum SubCommand {
     /// Load playlist at path to queue.
     Load { path: String },
     /// Display the current queue.
-    Queue {
-        #[clap(long, short)]
-        /// Group the queue by artist/album, or composer/work group is true. This overrides
-        /// grouped_queue from the config file.
-        group: Option<bool>,
-    },
+    Queue,
     /// Search the MPD database.
     Search {
         #[clap(flatten)]

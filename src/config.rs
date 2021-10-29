@@ -21,7 +21,6 @@ pub struct Config {
     pub hosts: Vec<Host>,
     pub tags: Vec<Tag>,
     pub width: usize,
-    pub grouped_queue: bool,
     no_default_tags: bool,
 }
 
@@ -64,7 +63,6 @@ impl Default for Config {
                 })
                 .collect(),
             width: 50,
-            grouped_queue: false,
             no_default_tags: false,
         }
     }

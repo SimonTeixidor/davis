@@ -2,95 +2,44 @@ use crate::ansi::{FormattedString, Style};
 use crate::tags::Tags;
 use mpd::Song;
 
-pub fn print(queue: Vec<Song>, current: Option<Song>, group: bool) {
-    if group {
-        print_grouped(queue, current)
-    } else {
-        print_flat(queue, current)
-    }
+pub fn bold<S: AsRef<str>>(s: S) -> String {
+    FormattedString::new(s.as_ref())
+        .style(Style::Bold)
+        .to_string()
 }
 
-fn print_grouped(queue: Vec<Song>, current: Option<Song>) {
-    let mut group = None;
+fn tags_joined(tags: &Tags, keys: &[&str], sep: &str) -> Option<String> {
+    keys.iter()
+        .map(|k| tags.get_option_joined(k))
+        .collect::<Option<Vec<_>>>()
+        .map(|v| v.join(sep))
+}
 
-    let max_movement_len = queue
-        .iter()
-        .filter_map(|s| {
-            let tags = Tags::from_song(s);
-            tags.get("movementnumber")
-                .into_iter()
-                .next()
-                .map(|s| s.len())
-        })
-        .max()
-        .unwrap_or(3);
+fn header(song: &Song) -> Option<String> {
+    let tags = Tags::from_song(song);
+    tags_joined(&tags, &["work", "composer"], " - ")
+        .or_else(|| tags_joined(&tags, &["album", "albumartist"], " - "))
+        .or_else(|| tags_joined(&tags, &["album", "artist"], " - "))
+}
 
-    let max_queue_position_len = ((queue.len() + 1) as f64).log10() as usize;
-
-    for (i, song) in queue.into_iter().enumerate() {
-        let tags = Tags::from_song(&song);
-        let new_group = if let (Some(work), Some(composer)) = (
-            tags.get_option_joined("work"),
-            tags.get_option_joined("composer"),
-        ) {
-            Some(format!("{} - {}", composer, work))
-        } else if let (Some(album), Some(albumartist)) = (
-            tags.get_option_joined("album"),
-            tags.get_option_joined("albumartist"),
-        ) {
-            Some(format!("{} - {}", albumartist, album))
-        } else {
-            None
-        };
-
-        match new_group {
-            Some(new_group) if group.as_ref() != Some(&new_group) => {
-                group = Some(new_group.clone());
-                println!("{}", FormattedString::new(&*new_group).style(Style::Bold))
-            }
-            _ => {}
+pub fn print(queue: Vec<Song>, current: Option<Song>) {
+    let mut cur_header = None;
+    for (pos, song) in queue.into_iter().enumerate() {
+        if let Some(h) = header(&song).filter(|h| Some(h) != cur_header.as_ref()) {
+            println!("{}", bold(&h));
+            cur_header = Some(h);
         }
 
-        let title = if let (Some(movementnumber), Some(movement)) = (
-            tags.get_option_joined("movementnumber"),
-            tags.get_option_joined("movement"),
-        ) {
-            format!(
-                "{:>width$}. {}",
-                movementnumber,
-                movement,
-                width = max_movement_len
-            )
-        } else if let Some(title) = song.title {
-            title
-        } else {
-            song.file
-        };
-        let title = if current.as_ref().and_then(|s| s.place) == song.place {
-            format!("{}", FormattedString::new(&*title).style(Style::Bold))
-        } else {
-            title.to_string()
-        };
-        println!(
-            "{:<width$} {}",
-            format!("{}.", i + 1),
-            title,
-            width = max_queue_position_len + 2
-        );
-    }
-}
+        let pos = format!("{}\t", pos + 1);
+        let tags = Tags::from_song(&song);
+        let meta = tags_joined(&tags, &["movementnumber", "movement"], "\t")
+            .or_else(|| song.title.clone())
+            .unwrap_or_else(|| song.file.clone());
 
-fn print_flat(queue: Vec<Song>, current: Option<Song>) {
-    for (i, song) in queue.into_iter().enumerate() {
-        let title = match (song.artist, song.title) {
-            (Some(artist), Some(title)) => format!("{} - {}", artist, title),
-            _ => song.file,
-        };
-        let title = if current.as_ref().and_then(|s| s.place) == song.place {
-            format!("{}", FormattedString::new(&*title).style(Style::Bold))
+        if Some(&song) == current.as_ref() {
+            println!("{} {}", bold(pos), bold(meta));
         } else {
-            title
-        };
-        println!("{:<3} {}", format!("{}.", i + 1), title);
+            println!("{} {}", pos, meta);
+        }
     }
 }

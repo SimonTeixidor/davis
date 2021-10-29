@@ -72,11 +72,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Stop => c.stop()?,
         SubCommand::Add { path } => c.add(&*trim_path(&*path))?,
         SubCommand::Load { path } => c.load(&*path, ..)?,
-        SubCommand::Queue { group } => queue::print(
-            c.queue()?,
-            c.currentsong()?,
-            group.unwrap_or(conf.grouped_queue),
-        ),
+        SubCommand::Queue => queue::print(c.queue()?, c.currentsong()?),
         SubCommand::Search { query } => {
             for song in c.search(&query.to_mpd_query(), None)? {
                 println!("{}", song.file);
