@@ -42,7 +42,7 @@ impl FromStr for SeekArg {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() == 0 {
+        if s.is_empty() {
             return Err(Error::ParseSeekError("Empty string."));
         }
 
