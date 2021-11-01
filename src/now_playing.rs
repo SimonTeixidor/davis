@@ -4,29 +4,12 @@ use crate::error::Error;
 use crate::filecache;
 use crate::table::{Table, TableRow};
 use crate::tags::Tags;
-use crate::terminal_dimensions;
 use mpd::{Client, Song};
 use std::fs::File;
 use std::ops::Add;
 
-pub fn now_playing(
-    client: &mut mpd::Client,
-    cache: bool,
-    disable_formatting: bool,
-    conf: &Config,
-) -> Result<(), Error> {
-    let winsize = terminal_dimensions::terminal_size();
-    let char_width = if winsize.ws_col != 0 && winsize.ws_xpixel != 0 {
-        log::trace!(
-            "Calculated terminal character width to {}px",
-            winsize.ws_xpixel / winsize.ws_col
-        );
-        winsize.ws_xpixel / winsize.ws_col
-    } else {
-        log::trace!("Terminal reports 0 width, defaulting to character width of 10px");
-        10
-    };
-    let image_width = conf.width as u32 * char_width as u32;
+pub fn now_playing(client: &mut mpd::Client, cache: bool, conf: &Config) -> Result<(), Error> {
+    let image_width = conf.width as u32;
 
     let song = match client.currentsong()? {
         None => {
@@ -63,11 +46,11 @@ pub fn now_playing(
                 .iter()
                 .flat_map(|values| {
                     values.iter().map(|value| {
-                        TableRow::new(
+                        TableRow::new(vec![
                             FormattedString::new(&*label.as_ref().unwrap_or(&tag))
                                 .style(Style::Bold),
                             FormattedString::new(&*value),
-                        )
+                        ])
                     })
                 })
                 .collect::<Vec<_>>()
@@ -75,23 +58,14 @@ pub fn now_playing(
         .flat_map(|v| v.into_iter())
         .collect::<Vec<_>>();
 
-    if !disable_formatting {
-        println!("{}", header(&tags, conf.width));
-    }
-    println!(
-        "{:width$}",
-        Table {
-            rows: &*table_rows,
-            disable_formatting
-        },
-        width = conf.width
-    );
+    println!("{}", header(&tags));
+    println!("{}", Table { rows: &*table_rows },);
     Ok(())
 }
 
-fn header(tags: &Tags, width: usize) -> String {
-    classical_work_description(tags, width)
-        .or_else(|| popular_music_title(tags, width))
+fn header(tags: &Tags) -> String {
+    classical_work_description(tags)
+        .or_else(|| popular_music_title(tags))
         .unwrap_or_else(|| "".to_string())
 }
 
@@ -122,7 +96,7 @@ fn fetch_albumart(
     Ok(sixel_file)
 }
 
-fn classical_work_description(tags: &Tags, width: usize) -> Option<String> {
+fn classical_work_description(tags: &Tags) -> Option<String> {
     let title = tags
         .get_option_joined("MOVEMENTNUMBER")
         .and_then(|n| {
@@ -133,22 +107,16 @@ fn classical_work_description(tags: &Tags, width: usize) -> Option<String> {
 
     Some(format!(
         "{}\n{}\n{}\n",
-        FormattedString::new(&*textwrap::fill(
-            &*tags.get_option_joined("COMPOSER")?,
-            width
-        ))
-        .style(Style::Bold),
-        FormattedString::new(&*textwrap::fill(&*tags.get_option_joined("WORK")?, width))
-            .style(Style::Bold),
-        FormattedString::new(&*textwrap::fill(&*title, width)).style(Style::Bold),
+        FormattedString::new(&*tags.get_option_joined("COMPOSER")?).style(Style::Bold),
+        FormattedString::new(&*tags.get_option_joined("WORK")?).style(Style::Bold),
+        FormattedString::new(&*title).style(Style::Bold)
     ))
 }
 
-fn popular_music_title(tags: &Tags, width: usize) -> Option<String> {
+fn popular_music_title(tags: &Tags) -> Option<String> {
     Some(format!(
         "{}\n{}\n",
-        FormattedString::new(&*textwrap::fill(&*tags.get_option_joined("ARTIST")?, width))
-            .style(Style::Bold),
+        FormattedString::new(&*tags.get_option_joined("ARTIST")?).style(Style::Bold),
         FormattedString::new(&*tags.get_option_joined("TITLE")?).style(Style::Bold),
     ))
 }

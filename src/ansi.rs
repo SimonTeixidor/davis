@@ -3,27 +3,6 @@ use std::fmt;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy)]
-pub enum Colour {
-    Black = 30,
-    DarkRed = 31,
-    DarkGreen = 32,
-    DarkYellow = 33,
-    DarkBlue = 34,
-    DarkMagenta = 35,
-    DarkCyan = 36,
-    DarkWhite = 37,
-    BrightBlack = 90,
-    BrightRed = 91,
-    BrightGreen = 92,
-    BrightYellow = 93,
-    BrightBlue = 94,
-    BrightMagenta = 95,
-    BrightCyan = 96,
-    White = 97,
-}
-
-#[allow(dead_code)]
-#[derive(Clone, Copy)]
 pub enum Style {
     Bold = 1,
     Faint = 2,
@@ -32,19 +11,11 @@ pub enum Style {
 }
 
 pub struct FormattedString<'a> {
-    pub colour: Option<Colour>,
     pub style: Option<Style>,
     pub string: &'a str,
 }
 
 impl<'a> FormattedString<'a> {
-    pub fn colour(self, colour: Colour) -> FormattedString<'a> {
-        FormattedString {
-            colour: Some(colour),
-            ..self
-        }
-    }
-
     pub fn style(self, style: Style) -> FormattedString<'a> {
         FormattedString {
             style: Some(style),
@@ -54,7 +25,6 @@ impl<'a> FormattedString<'a> {
 
     pub fn new(string: &'a str) -> FormattedString<'a> {
         FormattedString {
-            colour: None,
             style: None,
             string,
         }
@@ -68,26 +38,13 @@ impl<'a> fmt::Display for FormattedString<'a> {
             return Ok(());
         }
 
-        match (self.style, self.colour) {
-            (Some(colour), Some(style)) => {
-                write!(formatter, "\x1B[{};{}m", colour as u8, style as u8)?;
-                formatter.pad(&*self.string)?;
-                write!(formatter, "\x1B[{}m", Style::Default as u8)?;
-            }
-            (Some(colour), None) => {
-                write!(formatter, "\x1B[{}m", colour as u8)?;
-                formatter.pad(&*self.string)?;
-                write!(formatter, "\x1B[{}m", Style::Default as u8)?;
-            }
-            (None, Some(style)) => {
-                write!(formatter, "\x1B[{}m", style as u8)?;
-                formatter.pad(&*self.string)?;
-                write!(formatter, "\x1B[{}m", Style::Default as u8)?;
-            }
-            (None, None) => {
-                formatter.pad(&*self.string)?;
-            }
-        };
+        if let Some(style) = self.style {
+            write!(formatter, "\x1B[{}m", style as u8)?;
+            formatter.pad(&*self.string)?;
+            write!(formatter, "\x1B[{}m", Style::Default as u8)?;
+        } else {
+            formatter.pad(&*self.string)?;
+        }
         Ok(())
     }
 }

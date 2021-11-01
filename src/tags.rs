@@ -48,6 +48,13 @@ impl Tags {
             Some(vals.join(", "))
         }
     }
+
+    pub fn joined(&self, keys: &[&str], sep: &str) -> Option<String> {
+        keys.iter()
+            .map(|k| self.get_option_joined(k))
+            .collect::<Option<Vec<_>>>()
+            .map(|v| v.join(sep))
+    }
 }
 
 fn tag_filter<'a>(vals: &'a [(String, String)], tag: &'a str) -> impl Iterator<Item = &'a str> {

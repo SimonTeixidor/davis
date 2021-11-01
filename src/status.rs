@@ -3,7 +3,7 @@ use crate::error::Error;
 use crate::table::{Table, TableRow};
 use std::time::Duration;
 
-pub fn status(c: &mut mpd::Client, disable_formatting: bool, width: usize) -> Result<(), Error> {
+pub fn status(c: &mut mpd::Client) -> Result<(), Error> {
     let song = c.currentsong()?;
     let status = c.status()?;
 
@@ -42,7 +42,7 @@ pub fn status(c: &mut mpd::Client, disable_formatting: bool, width: usize) -> Re
 
     let queue_position = status.song.map(|s| format!("{}", 1 + s.pos));
     if let Some(pos) = queue_position.as_ref() {
-        table_rows.push(table_row("Queue Position", &*pos));
+        table_rows.push(table_row("Position", &*pos));
     }
     let volume = format!("{}%", status.volume);
     table_rows.push(table_row("Volume", &*volume));
@@ -50,23 +50,16 @@ pub fn status(c: &mut mpd::Client, disable_formatting: bool, width: usize) -> Re
     table_rows.push(table_row("Random", bool_on_off(status.random)));
     table_rows.push(table_row("Single", bool_on_off(status.single)));
     table_rows.push(table_row("Consume", bool_on_off(status.consume)));
-    println!(
-        "{:width$}",
-        Table {
-            rows: &*table_rows,
-            disable_formatting
-        },
-        width = width
-    );
+    println!("{}", Table { rows: &table_rows });
     Ok(())
 }
 
 // Table row with bold key and normal value
 fn table_row<'a>(key: &'a str, val: &'a str) -> TableRow<'a> {
-    TableRow::new(
+    TableRow::new(vec![
         FormattedString::new(key).style(Style::Bold),
         FormattedString::new(val),
-    )
+    ])
 }
 
 fn bool_on_off(b: bool) -> &'static str {

@@ -19,7 +19,6 @@ mod subcommands;
 mod tab;
 mod table;
 mod tags;
-mod terminal_dimensions;
 
 use cli::SubCommand;
 use error::{Error, WithContext};
@@ -49,9 +48,7 @@ fn try_main() -> Result<(), Error> {
     let mut c = Client::new(TcpStream::connect(&mpd_host_str).context("connecting to MPD")?)?;
 
     match opts.subcommand.expect("no subcommand, this is a bug.") {
-        SubCommand::Current { no_cache, plain } => {
-            now_playing::now_playing(&mut c, !no_cache, plain, &conf)?
-        }
+        SubCommand::Current { no_cache } => now_playing::now_playing(&mut c, !no_cache, &conf)?,
         SubCommand::Play { position: Some(id) } => c.play_from_position(id - 1)?,
         SubCommand::Play { position: None } => c.play()?,
         SubCommand::Pause => c.pause(true)?,
@@ -83,32 +80,29 @@ fn try_main() -> Result<(), Error> {
                 println!("{}", val);
             }
         }
-        SubCommand::ReadComments { file, plain } => {
+        SubCommand::ReadComments { file } => {
             let table_rows = c
                 .readcomments(&*trim_path(&*file))?
                 .collect::<Result<Vec<_>, _>>()?;
             let table_rows = table_rows
                 .iter()
                 .map(|(k, v)| {
-                    table::TableRow::new(
+                    table::TableRow::new(vec![
                         ansi::FormattedString::new(&k).style(ansi::Style::Bold),
                         ansi::FormattedString::new(&v),
-                    )
+                    ])
                 })
                 .collect::<Vec<_>>();
             println!(
                 "{:width$}",
-                table::Table {
-                    rows: &*table_rows,
-                    disable_formatting: plain
-                },
+                table::Table { rows: &*table_rows },
                 width = conf.width
             );
         }
         SubCommand::Update => {
             c.update()?;
         }
-        SubCommand::Status { plain } => status::status(&mut c, plain, conf.width)?,
+        SubCommand::Status => status::status(&mut c)?,
         SubCommand::Albumart { song_path, output } => {
             albumart::fetch_albumart(&mut c, song_path.as_deref(), &*output)?;
         }

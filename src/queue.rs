@@ -1,4 +1,5 @@
 use crate::ansi::{FormattedString, Style};
+use crate::table::{Table, TableRow};
 use crate::tags::Tags;
 use mpd::Song;
 
@@ -8,38 +9,70 @@ pub fn bold<S: AsRef<str>>(s: S) -> String {
         .to_string()
 }
 
-fn tags_joined(tags: &Tags, keys: &[&str], sep: &str) -> Option<String> {
-    keys.iter()
-        .map(|k| tags.get_option_joined(k))
-        .collect::<Option<Vec<_>>>()
-        .map(|v| v.join(sep))
-}
-
 fn header(song: &Song) -> Option<String> {
     let tags = Tags::from_song(song);
-    tags_joined(&tags, &["work", "composer"], " - ")
-        .or_else(|| tags_joined(&tags, &["album", "albumartist"], " - "))
-        .or_else(|| tags_joined(&tags, &["album", "artist"], " - "))
+    tags.joined(&["work", "composer"], " - ")
+        .or_else(|| tags.joined(&["album", "albumartist"], " - "))
+        .or_else(|| tags.joined(&["album", "artist"], " - "))
+}
+
+struct QueueRow {
+    is_current: bool,
+    fields: Vec<String>,
+}
+
+impl QueueRow {
+    fn to_table_row(&self) -> TableRow {
+        TableRow::new(
+            self.fields
+                .iter()
+                .map(|s| {
+                    FormattedString::new(&*s).style(if self.is_current {
+                        Style::Bold
+                    } else {
+                        Style::Default
+                    })
+                })
+                .collect(),
+        )
+    }
+}
+
+fn print_table(rows: &[QueueRow]) {
+    let table_rows = rows
+        .iter()
+        .map(|r| r.to_table_row())
+        .collect::<Vec<TableRow>>();
+    println!("{}", Table { rows: &*table_rows });
 }
 
 pub fn print(queue: Vec<Song>, current: Option<Song>) {
     let mut cur_header = None;
+    let mut rows: Vec<QueueRow> = Vec::new();
     for (pos, song) in queue.into_iter().enumerate() {
         if let Some(h) = header(&song).filter(|h| Some(h) != cur_header.as_ref()) {
+            if !rows.is_empty() {
+                print_table(&*rows);
+                rows.clear();
+            }
             println!("{}", bold(&h));
             cur_header = Some(h);
         }
 
-        let pos = format!("{}\t", pos + 1);
         let tags = Tags::from_song(&song);
-        let meta = tags_joined(&tags, &["movementnumber", "movement"], "\t")
-            .or_else(|| song.title.clone())
-            .unwrap_or_else(|| song.file.clone());
-
-        if Some(&song) == current.as_ref() {
-            println!("{} {}", bold(pos), bold(meta));
-        } else {
-            println!("{} {}", pos, meta);
-        }
+        let mut fields = ["movementnumber", "movement"]
+            .iter()
+            .map(|s| tags.get_option_joined(s))
+            .collect::<Option<Vec<String>>>()
+            .or_else(|| song.title.clone().map(|t| vec![t]))
+            .unwrap_or_else(|| vec![song.file.clone()]);
+        fields.insert(0, pos.to_string());
+        rows.push(QueueRow {
+            is_current: Some(&song) == current.as_ref(),
+            fields,
+        });
+    }
+    if !rows.is_empty() {
+        print_table(&*rows);
     }
 }

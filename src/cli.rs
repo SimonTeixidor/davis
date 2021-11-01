@@ -11,10 +11,7 @@ pub fn parse_args() -> Opts {
     logger::Logger(opts.verbose).init();
     if opts.subcommand.is_none() {
         log::trace!("No subcommand specified, defaulting to current.");
-        opts.subcommand = Some(SubCommand::Current {
-            no_cache: false,
-            plain: false,
-        });
+        opts.subcommand = Some(SubCommand::Current { no_cache: false });
     }
 
     if let Some(SubCommand::Custom(v)) = &opts.subcommand {
@@ -51,9 +48,6 @@ pub enum SubCommand {
         #[clap(long, short)]
         /// Fetch new album art from MPD, ignoring any cached images..
         no_cache: bool,
-        #[clap(long, short)]
-        /// Print only plain text in a key=value format.
-        plain: bool,
     },
     /// Start playback.
     Play {
@@ -93,20 +87,11 @@ pub enum SubCommand {
         query: SearchQuery,
     },
     /// Read raw metadata tags for file.
-    ReadComments {
-        file: String,
-        #[clap(long, short)]
-        /// Print only plain text in a key=value format.
-        plain: bool,
-    },
+    ReadComments { file: String },
     /// Update the MPD database.
     Update,
     /// Display MPD status.
-    Status {
-        #[clap(long, short)]
-        /// Print only plain text in a key=value format.
-        plain: bool,
-    },
+    Status,
     /// Download albumart for track.
     Albumart {
         /// The song to fetch albumart for. Will use currently playing song if not provided.
