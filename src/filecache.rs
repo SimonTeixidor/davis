@@ -7,7 +7,7 @@ pub fn cache<F: FnMut(&mut File) -> Result<(), Error>>(
     name: &str,
     mut task: F,
     ignore_existing: bool,
-) -> Result<File, Error> {
+) -> Result<PathBuf, Error> {
     let home = env::var("HOME").expect("$HOME was not set!");
     let mut cache_path: PathBuf = [&*home, ".cache", "davis", "albumart"].iter().collect();
 
@@ -38,5 +38,5 @@ pub fn cache<F: FnMut(&mut File) -> Result<(), Error>>(
     } else {
         log::trace!("Found album art file in cache: {:?}", &cache_path);
     }
-    Ok(File::open(cache_path).context("opening albumart cache file")?)
+    Ok(cache_path)
 }

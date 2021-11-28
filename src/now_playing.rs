@@ -1,16 +1,15 @@
 use crate::ansi::{is_dumb_terminal, FormattedString, Style};
 use crate::config::{Config, Tag};
-use crate::error::Error;
+use crate::error::{Error, WithContext};
 use crate::filecache;
 use crate::table::{Table, TableRow};
 use crate::tags::Tags;
 use mpd::{Client, Song};
-use std::fs::File;
+use std::io::Write;
 use std::ops::Add;
+use std::path::PathBuf;
 
 pub fn now_playing(client: &mut mpd::Client, cache: bool, conf: &Config) -> Result<(), Error> {
-    let image_width = conf.width as u32;
-
     let song = match client.currentsong()? {
         None => {
             println!("Not playing.");
@@ -27,11 +26,16 @@ pub fn now_playing(client: &mut mpd::Client, cache: bool, conf: &Config) -> Resu
     );
 
     if !is_dumb_terminal() {
-        match fetch_albumart(&song, client, image_width, cache) {
-            Ok(mut albumart) => {
-                if let Err(e) = std::io::copy(&mut albumart, &mut std::io::stdout().lock()) {
-                    log::error!("Failed to write album art to stdout: {}", e);
-                }
+        match fetch_albumart(&song, client, cache) {
+            Ok(albumart) => {
+                use std::process::Command;
+                Command::new("pica")
+                    .args(["-w", "500"])
+                    .arg(albumart)
+                    .spawn()
+                    .unwrap()
+                    .wait()
+                    .unwrap();
             }
             Err(e) => log::error!("Failed to fetch album art: {}", e),
         }
@@ -69,31 +73,20 @@ fn header(tags: &Tags) -> String {
         .unwrap_or_else(|| "".to_string())
 }
 
-fn fetch_albumart(
-    song: &Song,
-    client: &mut Client,
-    width: u32,
-    cache: bool,
-) -> Result<File, Error> {
-    let cache_key =
-        song.file.rsplit('/').skip(1).fold(String::new(), Add::add) + &*width.to_string();
+fn fetch_albumart(song: &Song, client: &mut Client, cache: bool) -> Result<PathBuf, Error> {
+    let cache_key = song.file.rsplit('/').skip(1).fold(String::new(), Add::add);
 
-    let sixel_file = filecache::cache(
+    filecache::cache(
         &*cache_key,
         move |f| {
             client.binarylimit(4_000_000)?;
             let albumart = client.albumart(&*song.file)?;
-            let img =
-                image::io::Reader::new(std::io::BufReader::new(std::io::Cursor::new(albumart)))
-                    .with_guessed_format()
-                    .unwrap()
-                    .decode()?;
-            sixel::to_sixel_writer(width, &img, std::io::BufWriter::new(f))?;
+            f.write_all(&*albumart)
+                .context("writing album art to cache")?;
             Ok(())
         },
         !cache,
-    )?;
-    Ok(sixel_file)
+    )
 }
 
 fn classical_work_description(tags: &Tags) -> Option<String> {
