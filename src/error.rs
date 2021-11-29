@@ -3,33 +3,33 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum Error {
-    MpdError(mpd::error::Error),
-    IoError {
+    Mpd(mpd::error::Error),
+    Io {
         context: &'static str,
         error: std::io::Error,
     },
-    ArgParseError(pico_args::Error),
-    TomlError(toml::de::Error),
-    ParseSeekError(&'static str),
+    ArgParse(pico_args::Error),
+    Toml(toml::de::Error),
+    ParseSeek(&'static str),
 }
 
 impl StdErr for Error {}
 
 impl From<mpd::error::Error> for Error {
     fn from(e: mpd::error::Error) -> Self {
-        Error::MpdError(e)
+        Error::Mpd(e)
     }
 }
 
 impl From<toml::de::Error> for Error {
     fn from(e: toml::de::Error) -> Self {
-        Error::TomlError(e)
+        Error::Toml(e)
     }
 }
 
 impl From<pico_args::Error> for Error {
     fn from(e: pico_args::Error) -> Self {
-        Error::ArgParseError(e)
+        Error::ArgParse(e)
     }
 }
 
@@ -39,26 +39,26 @@ pub trait WithContext<T> {
 
 impl<T> WithContext<T> for Result<T, std::io::Error> {
     fn context(self, context: &'static str) -> Result<T, Error> {
-        self.map_err(|error| Error::IoError { context, error })
+        self.map_err(|error| Error::Io { context, error })
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::MpdError(e) => {
+            Error::Mpd(e) => {
                 write!(f, "An error occured when communicating with MPD: {}", e)
             }
-            Error::IoError { error, context } => {
+            Error::Io { error, context } => {
                 write!(f, "I/O error when {}:\n{}", context, error)
             }
-            Error::TomlError(e) => {
+            Error::Toml(e) => {
                 write!(f, "Couldn't parse the configuration file:\n{}", e)
             }
-            Error::ArgParseError(e) => {
+            Error::ArgParse(e) => {
                 write!(f, "Failed to parse command line arguments:\n{}", e)
             }
-            Error::ParseSeekError(e) => {
+            Error::ParseSeek(e) => {
                 write!(f, "Couldn't parse seek command: {}", e)
             }
         }

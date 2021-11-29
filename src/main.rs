@@ -31,7 +31,7 @@ fn main() {
 
     match try_main() {
         Ok(_) => (),
-        Err(e @ Error::ArgParseError(_)) => {
+        Err(e @ Error::ArgParse(_)) => {
             eprintln!("{}\n\n{}", e, cli::HELP);
             std::process::exit(1);
         }
@@ -92,8 +92,8 @@ fn try_main() -> Result<(), Error> {
                 .iter()
                 .map(|(k, v)| {
                     table::TableRow::new(vec![
-                        ansi::FormattedString::new(&k).style(ansi::Style::Bold),
-                        ansi::FormattedString::new(&v),
+                        ansi::FormattedString::new(k).style(ansi::Style::Bold),
+                        ansi::FormattedString::new(v),
                     ])
                 })
                 .collect::<Vec<_>>();
@@ -131,9 +131,9 @@ fn try_main() -> Result<(), Error> {
 fn mpd_host(opts: &cli::Opts, conf: &config::Config) -> String {
     if let Some(host) = config::mpd_host_env_var() {
         log::trace!("Found MPD_HOST environment variable: {}", host);
-        lookup_mpd_host(&*host, &conf)
+        lookup_mpd_host(&*host, conf)
     } else if let Some(host) = &opts.host {
-        if let Some(host_config) = conf.hosts.iter().find(|h| h.label.as_ref() == Some(&host)) {
+        if let Some(host_config) = conf.hosts.iter().find(|h| h.label.as_ref() == Some(host)) {
             log::trace!(
                 "MPD host passed as label {}, and resolved to host: {}",
                 host,

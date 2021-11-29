@@ -51,9 +51,9 @@ pub fn now_playing(client: &mut mpd::Client, cache: bool, conf: &Config) -> Resu
                 .flat_map(|values| {
                     values.iter().map(|value| {
                         TableRow::new(vec![
-                            FormattedString::new(&*label.as_ref().unwrap_or(&tag))
+                            FormattedString::new(&*label.as_ref().unwrap_or(tag))
                                 .style(Style::Bold),
-                            FormattedString::new(&*value),
+                            FormattedString::new(*value),
                         ])
                     })
                 })

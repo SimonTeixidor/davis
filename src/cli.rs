@@ -37,7 +37,7 @@ fn pico_parse_args() -> Result<Opts, pico_args::Error> {
     let host = pargs.opt_value_from_str(["-h", "--host"])?;
     let verbose = pargs.contains(["-v", "--verbose"]);
     let subcommand = pargs.subcommand()?;
-    let subcommand = match subcommand.as_ref().map(|s| &**s) {
+    let subcommand = match subcommand.as_deref() {
         Some("current") | None => Some(SubCommand::Current {
             no_cache: pargs.contains("--no-args"),
         }),
@@ -114,9 +114,9 @@ fn pico_parse_args() -> Result<Opts, pico_args::Error> {
     };
 
     Ok(Opts {
-        host: host,
-        verbose: verbose,
-        subcommand: subcommand,
+        host,
+        verbose,
+        subcommand,
     })
 }
 
@@ -243,7 +243,7 @@ pub fn print_help() {
     println!("{}", HELP);
 }
 
-pub static HELP: &'static str = "USAGE:
+pub static HELP: &str = "USAGE:
     davis [FLAGS] [OPTIONS] [SUBCOMMAND]
 
 FLAGS:

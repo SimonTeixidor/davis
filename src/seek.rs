@@ -43,20 +43,20 @@ impl FromStr for SeekArg {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            return Err(Error::ParseSeekError("Empty string."));
+            return Err(Error::ParseSeek("Empty string."));
         }
 
         let (direction, rest) = match s.chars().next() {
             Some('+') => (SeekDirection::Forward, &s[1..]),
             Some('-') => (SeekDirection::Back, &s[1..]),
-            _ => (SeekDirection::Absolute, &s[..]),
+            _ => (SeekDirection::Absolute, s),
         };
 
         let sections = rest
             .split(':')
             .map(u32::from_str)
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|_| Error::ParseSeekError("Field is not integer."))?;
+            .map_err(|_| Error::ParseSeek("Field is not integer."))?;
 
         let seconds = sections
             .iter()

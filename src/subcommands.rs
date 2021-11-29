@@ -28,7 +28,7 @@ pub fn find_subcommand(name: &ffi::OsStr) -> Option<PathBuf> {
         .into_iter()
         .flat_map(|p| fs::read_dir(p).into_iter().flatten())
         .flat_map(|d| d.into_iter())
-        .find(|d| d.file_name() == binary_name && is_executable(&d))
+        .find(|d| d.file_name() == binary_name && is_executable(d))
         .map(|d| d.path())
 }
 
