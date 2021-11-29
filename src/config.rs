@@ -1,5 +1,6 @@
 use crate::error::{Error, WithContext};
-use serde::Deserialize;
+use configparser::ini::Ini;
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -15,13 +16,9 @@ static DEFAULT_TAGS: &[&str] = &[
     "Label",
 ];
 
-#[derive(Deserialize)]
-#[serde(default)]
 pub struct Config {
     pub hosts: Vec<Host>,
     pub tags: Vec<Tag>,
-    pub width: usize,
-    no_default_tags: bool,
 }
 
 impl Config {
@@ -39,16 +36,14 @@ impl Config {
     }
 }
 
-#[derive(Deserialize)]
 pub struct Tag {
     pub tag: String,
     pub label: Option<String>,
 }
 
-#[derive(Deserialize)]
 pub struct Host {
     pub host: String,
-    pub label: Option<String>,
+    pub label: String,
 }
 
 impl Default for Config {
@@ -62,8 +57,6 @@ impl Default for Config {
                     label: None,
                 })
                 .collect(),
-            width: 50,
-            no_default_tags: false,
         }
     }
 }
@@ -82,17 +75,10 @@ pub fn get_config() -> Result<Config, Error> {
             log::trace!("Read config from {:?}", f);
             let mut buf = String::new();
             f.read_to_string(&mut buf).context("reading config file")?;
-            Ok(toml::from_str(&*buf)?)
+            parse_config(Ini::new_cs().read(buf).map_err(Error::Config)?)
         }) {
         Ok(f) => {
             conf = f;
-            if !conf.no_default_tags {
-                conf.tags = Config::default()
-                    .tags
-                    .into_iter()
-                    .chain(conf.tags.into_iter())
-                    .collect();
-            }
         }
         Err(e) if etc_config_path.exists() || home_config_path.exists() => {
             log::warn!(
@@ -104,6 +90,46 @@ pub fn get_config() -> Result<Config, Error> {
     }
 
     Ok(conf)
+}
+
+fn parse_config(map: HashMap<String, HashMap<String, Option<String>>>) -> Result<Config, Error> {
+    let hosts = map
+        .get("hosts")
+        .map(parse_hosts)
+        .unwrap_or_else(|| Ok(vec![]))?;
+
+    let tags = map
+        .get("tags")
+        .and_then(parse_tags)
+        .unwrap_or_else(|| Config::default().tags);
+
+    Ok(Config { hosts, tags })
+}
+
+fn parse_hosts(map: &HashMap<String, Option<String>>) -> Result<Vec<Host>, Error> {
+    map.iter()
+        .map(|(label, host)| {
+            Ok(Host {
+                host: host.clone().ok_or_else(|| {
+                    Error::Config(format!("Missing hostname for host {}.", label))
+                })?,
+                label: label.clone(),
+            })
+        })
+        .collect::<Result<Vec<Host>, Error>>()
+}
+
+fn parse_tags(map: &HashMap<String, Option<String>>) -> Option<Vec<Tag>> {
+    map.get("enabled")
+        .and_then(|e| e.as_ref())
+        .map(|e| e.split(','))
+        .map(|ts| {
+            ts.map(|t| Tag {
+                tag: t.into(),
+                label: map.get(t).and_then(Clone::clone),
+            })
+            .collect()
+        })
 }
 
 pub fn mpd_host_env_var() -> Option<String> {

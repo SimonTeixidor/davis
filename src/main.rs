@@ -97,11 +97,7 @@ fn try_main() -> Result<(), Error> {
                     ])
                 })
                 .collect::<Vec<_>>();
-            println!(
-                "{:width$}",
-                table::Table { rows: &*table_rows },
-                width = conf.width
-            );
+            println!("{}", table::Table { rows: &*table_rows });
         }
         SubCommand::Update => {
             c.update()?;
@@ -133,7 +129,7 @@ fn mpd_host(opts: &cli::Opts, conf: &config::Config) -> String {
         log::trace!("Found MPD_HOST environment variable: {}", host);
         lookup_mpd_host(&*host, conf)
     } else if let Some(host) = &opts.host {
-        if let Some(host_config) = conf.hosts.iter().find(|h| h.label.as_ref() == Some(host)) {
+        if let Some(host_config) = conf.hosts.iter().find(|h| &*h.label == host) {
             log::trace!(
                 "MPD host passed as label {}, and resolved to host: {}",
                 host,
@@ -150,7 +146,7 @@ fn mpd_host(opts: &cli::Opts, conf: &config::Config) -> String {
 }
 
 fn lookup_mpd_host(host: &str, conf: &config::Config) -> String {
-    if let Some(host_config) = conf.hosts.iter().find(|h| h.label.as_deref() == Some(host)) {
+    if let Some(host_config) = conf.hosts.iter().find(|h| h.label == host) {
         log::trace!(
             "MPD host passed as label {}, and resolved to address: {}",
             host,

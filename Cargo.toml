@@ -17,6 +17,5 @@ codegen-units = 1
 libc = "0.2"
 mpd = { git = "https://github.com/SimonPersson/rust-mpd.git" }
 pico-args = "0.4.2"
-toml = "0.5"
-serde = { version = "1.0", features = ["derive"] }
+configparser = "3"
 log = "0.4"

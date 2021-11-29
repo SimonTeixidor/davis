@@ -9,8 +9,8 @@ pub enum Error {
         error: std::io::Error,
     },
     ArgParse(pico_args::Error),
-    Toml(toml::de::Error),
     ParseSeek(&'static str),
+    Config(String),
 }
 
 impl StdErr for Error {}
@@ -18,12 +18,6 @@ impl StdErr for Error {}
 impl From<mpd::error::Error> for Error {
     fn from(e: mpd::error::Error) -> Self {
         Error::Mpd(e)
-    }
-}
-
-impl From<toml::de::Error> for Error {
-    fn from(e: toml::de::Error) -> Self {
-        Error::Toml(e)
     }
 }
 
@@ -47,19 +41,19 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::Mpd(e) => {
-                write!(f, "An error occured when communicating with MPD: {}", e)
+                write!(f, "An error occured when communicating with MPD:\n{}", e)
             }
             Error::Io { error, context } => {
                 write!(f, "I/O error when {}:\n{}", context, error)
-            }
-            Error::Toml(e) => {
-                write!(f, "Couldn't parse the configuration file:\n{}", e)
             }
             Error::ArgParse(e) => {
                 write!(f, "Failed to parse command line arguments:\n{}", e)
             }
             Error::ParseSeek(e) => {
-                write!(f, "Couldn't parse seek command: {}", e)
+                write!(f, "Couldn't parse seek command:\n{}", e)
+            }
+            Error::Config(e) => {
+                write!(f, "Failed to parse config file:\n{}", e)
             }
         }
     }
