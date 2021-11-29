@@ -8,6 +8,7 @@ pub enum Error {
         context: &'static str,
         error: std::io::Error,
     },
+    ArgParseError(pico_args::Error),
     TomlError(toml::de::Error),
     ParseSeekError(&'static str),
 }
@@ -23,6 +24,12 @@ impl From<mpd::error::Error> for Error {
 impl From<toml::de::Error> for Error {
     fn from(e: toml::de::Error) -> Self {
         Error::TomlError(e)
+    }
+}
+
+impl From<pico_args::Error> for Error {
+    fn from(e: pico_args::Error) -> Self {
+        Error::ArgParseError(e)
     }
 }
 
@@ -47,6 +54,9 @@ impl fmt::Display for Error {
             }
             Error::TomlError(e) => {
                 write!(f, "Couldn't parse the configuration file:\n{}", e)
+            }
+            Error::ArgParseError(e) => {
+                write!(f, "Failed to parse command line arguments:\n{}", e)
             }
             Error::ParseSeekError(e) => {
                 write!(f, "Couldn't parse seek command: {}", e)

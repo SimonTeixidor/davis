@@ -31,6 +31,10 @@ fn main() {
 
     match try_main() {
         Ok(_) => (),
+        Err(e @ Error::ArgParseError(_)) => {
+            eprintln!("{}\n\n{}", e, cli::HELP);
+            std::process::exit(1);
+        }
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);
@@ -39,7 +43,7 @@ fn main() {
 }
 
 fn try_main() -> Result<(), Error> {
-    let opts = cli::parse_args();
+    let opts = cli::parse_args()?;
     let conf = config::get_config()?;
 
     let mpd_host = mpd_host(&opts, &conf);

@@ -15,8 +15,8 @@ static DEFAULT_TAGS: &[&str] = &[
     "Label",
 ];
 
-#[serde(default)]
 #[derive(Deserialize)]
+#[serde(default)]
 pub struct Config {
     pub hosts: Vec<Host>,
     pub tags: Vec<Tag>,
