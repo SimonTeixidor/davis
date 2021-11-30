@@ -24,8 +24,9 @@ add <path>
 
 albumart -o <output> [path]
 	Download album art to file specified by <output>. Davis will fetch the
-	album art for the track at [path] if specified, and the currently playing track
-	otherwise.
+	album art for the track at [path] if specified, and the currently playing
+	track otherwise. If dash ('-') is specified as output, davis will write the
+	album art to stdout.
 
 clear
 	Clear the current queue.
