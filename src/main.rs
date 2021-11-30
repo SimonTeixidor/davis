@@ -53,7 +53,7 @@ fn try_main() -> Result<(), Error> {
 
     match opts.subcommand.expect("no subcommand, this is a bug.") {
         SubCommand::Current { no_cache } => now_playing::now_playing(&mut c, !no_cache, &conf)?,
-        SubCommand::Play { position: Some(id) } => c.play_from_position(id - 1)?,
+        SubCommand::Play { position: Some(id) } => c.play_from_position(id.get() - 1)?,
         SubCommand::Play { position: None } => c.play()?,
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
@@ -106,8 +106,10 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Albumart { song_path, output } => {
             albumart::fetch_albumart(&mut c, song_path.as_deref(), &*output)?;
         }
-        SubCommand::Mv { from, to } => c.move_range(from - 1..=from - 1, to - 1)?,
-        SubCommand::Del { index } => c.delete(index - 1..=index - 1)?,
+        SubCommand::Mv { from, to } => {
+            c.move_range(from.get() - 1..=from.get() - 1, to.get() - 1)?
+        }
+        SubCommand::Del { index } => c.delete(index.get() - 1..=index.get() - 1)?,
         SubCommand::Seek { position } => seek::seek(&mut c, position)?,
         SubCommand::Tab { path } => tab::complete(&mut c, &*path)?,
         SubCommand::Custom(args) => {

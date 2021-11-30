@@ -50,6 +50,7 @@ pub fn print(queue: Vec<Song>, current: Option<Song>) {
     let mut cur_header = None;
     let mut rows: Vec<QueueRow> = Vec::new();
     for (pos, song) in queue.into_iter().enumerate() {
+        let pos = pos + 1;
         if let Some(h) = header(&song).filter(|h| Some(h) != cur_header.as_ref()) {
             if !rows.is_empty() {
                 print_table(&*rows);

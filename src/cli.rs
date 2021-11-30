@@ -4,6 +4,7 @@ use crate::subcommands::find_subcommand;
 use lexopt::prelude::*;
 use std::env;
 use std::ffi::OsString;
+use std::num::{NonZeroU32, NonZeroUsize};
 
 pub fn parse_args() -> Result<Opts, lexopt::Error> {
     let mut opts = lexopt_parse_args()?;
@@ -214,7 +215,7 @@ pub enum SubCommand {
     /// Start playback.
     Play {
         /// Queue position to start playing from, defaults to 1.
-        position: Option<u32>,
+        position: Option<NonZeroU32>,
     },
     /// Pause playback.
     Pause,
@@ -271,14 +272,14 @@ pub enum SubCommand {
     /// Move song in queue.
     Mv {
         /// Queue index of song to move
-        from: u32,
+        from: NonZeroU32,
         /// Position in queue to move song to
-        to: usize,
+        to: NonZeroUsize,
     },
     /// Remove song from queue.
     Del {
         /// Queue index
-        index: u32,
+        index: NonZeroU32,
     },
     /// Set current playback time.
     Seek {
