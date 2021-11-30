@@ -1,5 +1,6 @@
 use std::env;
 use std::fmt;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[allow(dead_code)]
 #[derive(Clone, Copy)]
@@ -49,9 +50,10 @@ impl<'a> fmt::Display for FormattedString<'a> {
     }
 }
 
+pub static PLAIN_FORMATTING: AtomicBool = AtomicBool::new(false);
 pub fn is_dumb_terminal() -> bool {
     let is_dumb = matches!(env::var("TERM"), Ok(s) if s == "dumb");
     let has_no_color = env::var("NO_COLOR").is_ok();
 
-    is_dumb || has_no_color
+    is_dumb || has_no_color || PLAIN_FORMATTING.load(Ordering::Relaxed)
 }

@@ -3,6 +3,7 @@ use mpd::Client;
 use mpd::Song;
 use std::net::TcpStream;
 use std::process::Command;
+use std::sync::atomic::Ordering;
 
 mod albumart;
 mod ansi;
@@ -48,6 +49,8 @@ fn try_main() -> Result<(), Error> {
 
     let mpd_host = mpd_host(&opts, &conf);
     let mpd_host_str = format!("{}:6600", &mpd_host);
+
+    ansi::PLAIN_FORMATTING.store(opts.plain_formatting, Ordering::Relaxed);
 
     let mut c = Client::new(TcpStream::connect(&mpd_host_str).context("connecting to MPD")?)?;
 

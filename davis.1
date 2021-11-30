@@ -29,6 +29,10 @@ Enable verbose output.\&
 .RS 4
 Specify which MPD server to talk to, can be specified using IP/hostname,
 or a label defined in the config file.\&
+.RE
+-p, --plain
+.RS 4
+Disable decorations in output, useful for scripting.\&
 .P
 .RE
 .SH DAVIS COMMANDS:
@@ -40,8 +44,9 @@ Add items in path to queue.\&
 albumart -o <output> [path]
 .RS 4
 Download album art to file specified by <output>.\& Davis will fetch the
-album art for the track at [path] if specified, and the currently playing track
-otherwise.\&
+album art for the track at [path] if specified, and the currently playing
+track otherwise.\& If dash ('-') is specified as output, davis will write the
+album art to stdout.\&
 .P
 .RE
 clear

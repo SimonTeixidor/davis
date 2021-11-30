@@ -31,6 +31,7 @@ pub fn parse_args() -> Result<Opts, lexopt::Error> {
 fn lexopt_parse_args() -> Result<Opts, lexopt::Error> {
     let mut host = None;
     let mut verbose = false;
+    let mut plain_formatting = false;
 
     let mut parser = lexopt::Parser::from_env();
     let mut subcommand = None;
@@ -49,6 +50,9 @@ fn lexopt_parse_args() -> Result<Opts, lexopt::Error> {
             }
             Short('v') | Long("verbose") => {
                 verbose = true;
+            }
+            Short('p') | Long("plain") => {
+                plain_formatting = true;
             }
             Value(cmd) => {
                 let cmd = cmd.into_string()?;
@@ -194,6 +198,7 @@ fn lexopt_parse_args() -> Result<Opts, lexopt::Error> {
     Ok(Opts {
         host,
         verbose,
+        plain_formatting,
         subcommand,
     })
 }
@@ -203,6 +208,7 @@ pub struct Opts {
     pub host: Option<String>,
     /// Enable verbose output.
     pub verbose: bool,
+    pub plain_formatting: bool,
     pub subcommand: Option<SubCommand>,
 }
 
@@ -325,8 +331,9 @@ pub static HELP: &str = "USAGE:
     davis [FLAGS] [OPTIONS] [SUBCOMMAND]
 
 FLAGS:
-        --help     Prints help information
-    -v, --verbose  Enable verbose output
+        --help     Prints help information.
+    -v, --verbose  Enable verbose output.
+    -p, --plain    Disable decorations in output, useful for scripting.
 
 OPTIONS:
     -h, --host <host>  IP/hostname or a label defined in the config file.

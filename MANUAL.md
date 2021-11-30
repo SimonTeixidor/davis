@@ -17,6 +17,8 @@ Davis is a command line interface for MPD.
 \-h, --host <host>
 	Specify which MPD server to talk to, can be specified using IP/hostname,
 	or a label defined in the config file.
+\-p, --plain
+	Disable decorations in output, useful for scripting.
 
 # DAVIS COMMANDS:
 add <path>

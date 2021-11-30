@@ -1,4 +1,4 @@
-use crate::ansi::FormattedString;
+use crate::ansi::{is_dumb_terminal, FormattedString};
 use std::collections::HashMap;
 use std::fmt;
 
@@ -38,6 +38,8 @@ impl<'a> fmt::Display for Table<'a> {
             for (i, f) in fields.iter().enumerate() {
                 if i + 1 == fields.len() {
                     write!(formatter, "{}", f)?;
+                } else if is_dumb_terminal() {
+                    write!(formatter, "{}:", f)?;
                 } else {
                     write!(formatter, "{:width$}", f, width = widths[&i] + 1)?;
                 }
