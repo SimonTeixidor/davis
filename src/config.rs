@@ -26,9 +26,12 @@ impl Config {
         if self.hosts.is_empty() {
             log::trace!("Found no host in config file, defaulting to 127.0.0.1.");
             "127.0.0.1".to_string()
+        } else if let Some(host) = self.hosts.iter().find(|h| &*h.label == "default") {
+            log::trace!("Using default host from config: {}", host.host);
+            host.host.clone()
         } else {
             log::trace!(
-                "Uses first host from config as default: {}",
+                "No default host configured, using random host from config: {}",
                 self.hosts[0].host
             );
             self.hosts[0].host.clone()
