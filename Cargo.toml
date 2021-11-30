@@ -16,6 +16,6 @@ codegen-units = 1
 [dependencies]
 libc = "0.2"
 mpd = { git = "https://github.com/SimonPersson/rust-mpd.git" }
-pico-args = "0.4.2"
+lexopt = "0.2"
 configparser = "3"
 log = "0.4"

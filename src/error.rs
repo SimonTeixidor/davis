@@ -8,7 +8,7 @@ pub enum Error {
         context: &'static str,
         error: std::io::Error,
     },
-    ArgParse(pico_args::Error),
+    ArgParse(lexopt::Error),
     ParseSeek(&'static str),
     Config(String),
 }
@@ -21,8 +21,8 @@ impl From<mpd::error::Error> for Error {
     }
 }
 
-impl From<pico_args::Error> for Error {
-    fn from(e: pico_args::Error) -> Self {
+impl From<lexopt::Error> for Error {
+    fn from(e: lexopt::Error) -> Self {
         Error::ArgParse(e)
     }
 }

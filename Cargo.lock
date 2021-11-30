@@ -25,11 +25,17 @@ name = "davis"
 version = "0.1.0"
 dependencies = [
  "configparser",
+ "lexopt",
  "libc",
  "log",
  "mpd",
- "pico-args",
 ]
+
+[[package]]
+name = "lexopt"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de7513aea7d10dc0694d719ac53de3b74f1600e41b9f81ed9f395d8ec36a2a70"
 
 [[package]]
 name = "libc"
@@ -53,9 +59,3 @@ source = "git+https://github.com/SimonPersson/rust-mpd.git#e67c8a2a77ca9a32352d6
 dependencies = [
  "bufstream",
 ]
-
-[[package]]
-name = "pico-args"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db8bcd96cb740d03149cbad5518db9fd87126a10ab519c011893b1754134c468"

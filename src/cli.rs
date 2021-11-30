@@ -1,11 +1,12 @@
 use crate::logger;
 use crate::seek;
 use crate::subcommands::find_subcommand;
+use lexopt::prelude::*;
 use std::env;
 use std::ffi::OsString;
 
-pub fn parse_args() -> Result<Opts, pico_args::Error> {
-    let mut opts = pico_parse_args()?;
+pub fn parse_args() -> Result<Opts, lexopt::Error> {
+    let mut opts = lexopt_parse_args()?;
     logger::Logger(opts.verbose).init();
     if opts.subcommand.is_none() {
         log::trace!("No subcommand specified, defaulting to current.");
@@ -26,92 +27,168 @@ pub fn parse_args() -> Result<Opts, pico_args::Error> {
     Ok(opts)
 }
 
-fn pico_parse_args() -> Result<Opts, pico_args::Error> {
-    let mut pargs = pico_args::Arguments::from_env();
+fn lexopt_parse_args() -> Result<Opts, lexopt::Error> {
+    let mut host = None;
+    let mut verbose = false;
 
-    if pargs.contains("--help") {
-        print_help();
-        std::process::exit(0);
+    let mut parser = lexopt::Parser::from_env();
+    let mut subcommand = None;
+    while let Some(arg) = parser.next()? {
+        match arg {
+            Long("help") => {
+                print_help();
+                std::process::exit(0);
+            }
+            Value(s) if s.clone().into_string()? == "help" => {
+                print_help();
+                std::process::exit(0);
+            }
+            Short('h') => {
+                host = Some(parser.value()?.parse()?);
+            }
+            Short('v') | Long("verbose") => {
+                verbose = true;
+            }
+            Value(cmd) => {
+                let cmd = cmd.into_string()?;
+                subcommand = Some(match &*cmd {
+                    "current" => SubCommand::Current {
+                        no_cache: Some(Long("no-cache")) == parser.next()?,
+                    },
+                    "play" => SubCommand::Play {
+                        position: if let Some(Value(i)) = parser.next()? {
+                            Some(i.parse()?)
+                        } else {
+                            None
+                        },
+                    },
+                    "pause" => SubCommand::Pause,
+                    "toggle" => SubCommand::Toggle,
+                    "ls" => SubCommand::Ls {
+                        path: if let Some(Value(i)) = parser.next()? {
+                            Some(i.parse()?)
+                        } else {
+                            None
+                        },
+                    },
+                    "clear" => SubCommand::Clear,
+                    "next" => SubCommand::Next,
+                    "prev" => SubCommand::Prev,
+                    "stop" => SubCommand::Stop,
+                    "add" => SubCommand::Add {
+                        path: if let Some(Value(i)) = parser.next()? {
+                            i.parse()?
+                        } else {
+                            return Err("missing path argument".into());
+                        },
+                    },
+                    "load" => SubCommand::Load {
+                        path: if let Some(Value(i)) = parser.next()? {
+                            i.parse()?
+                        } else {
+                            return Err("missing path argument".into());
+                        },
+                    },
+                    "queue" => SubCommand::Queue,
+                    "search" => {
+                        let mut query = vec![];
+                        while let Some(Value(i)) = parser.next()? {
+                            query.push(i.into_string()?);
+                        }
+                        SubCommand::Search {
+                            query: SearchQuery { query },
+                        }
+                    }
+                    "list" => {
+                        let tag = if let Some(Value(i)) = parser.next()? {
+                            i.into_string()?
+                        } else {
+                            return Err("missing tag argument".into());
+                        };
+
+                        let mut query = vec![];
+                        while let Some(Value(i)) = parser.next()? {
+                            query.push(i.into_string()?);
+                        }
+
+                        SubCommand::List {
+                            tag,
+                            query: SearchQuery { query },
+                        }
+                    }
+                    "read-comments" => SubCommand::ReadComments {
+                        file: if let Some(Value(i)) = parser.next()? {
+                            i.parse()?
+                        } else {
+                            return Err("missing file argument".into());
+                        },
+                    },
+                    "update" => SubCommand::Update,
+                    "status" => SubCommand::Status,
+                    "albumart" => {
+                        let mut output = None;
+                        let mut song_path = None;
+                        while let Some(arg) = parser.next()? {
+                            match arg {
+                                Short('o') | Long("output") => {
+                                    output = Some(parser.value()?.parse()?)
+                                }
+                                Value(path) => song_path = Some(path.into_string()?),
+                                _ => return Err(arg.unexpected()),
+                            }
+                        }
+                        SubCommand::Albumart {
+                            output: output.ok_or("missing output option")?,
+                            song_path,
+                        }
+                    }
+                    "mv" => SubCommand::Mv {
+                        from: if let Some(Value(i)) = parser.next()? {
+                            i.parse()?
+                        } else {
+                            return Err("missing from argument".into());
+                        },
+                        to: if let Some(Value(i)) = parser.next()? {
+                            i.parse()?
+                        } else {
+                            return Err("missing to argument".into());
+                        },
+                    },
+                    "del" => SubCommand::Del {
+                        index: if let Some(Value(i)) = parser.next()? {
+                            i.parse()?
+                        } else {
+                            return Err("missing index argument".into());
+                        },
+                    },
+                    "seek" => SubCommand::Seek {
+                        position: if let Some(Value(i)) = parser.next()? {
+                            i.parse()?
+                        } else {
+                            return Err("missing position argument".into());
+                        },
+                    },
+                    "tab" => SubCommand::Tab {
+                        path: if let Some(Value(i)) = parser.next()? {
+                            i.parse()?
+                        } else {
+                            return Err("missing path argument".into());
+                        },
+                    },
+                    cmd => {
+                        let mut remaining = vec![];
+                        while let Some(Value(i)) = parser.next()? {
+                            remaining.push(i);
+                        }
+                        let cmd = cmd.into();
+                        remaining.insert(0, cmd);
+                        SubCommand::Custom(remaining)
+                    }
+                })
+            }
+            _ => return Err(arg.unexpected()),
+        }
     }
-
-    let host = pargs.opt_value_from_str(["-h", "--host"])?;
-    let verbose = pargs.contains(["-v", "--verbose"]);
-    let subcommand = pargs.subcommand()?;
-    let subcommand = match subcommand.as_deref() {
-        Some("current") | None => Some(SubCommand::Current {
-            no_cache: pargs.contains("--no-args"),
-        }),
-        Some("play") => Some(SubCommand::Play {
-            position: pargs.opt_free_from_str()?,
-        }),
-        Some("pause") => Some(SubCommand::Pause),
-        Some("toggle") => Some(SubCommand::Toggle),
-        Some("ls") => Some(SubCommand::Ls {
-            path: pargs.opt_free_from_str()?,
-        }),
-        Some("clear") => Some(SubCommand::Clear),
-        Some("next") => Some(SubCommand::Next),
-        Some("prev") => Some(SubCommand::Prev),
-        Some("stop") => Some(SubCommand::Stop),
-        Some("add") => Some(SubCommand::Add {
-            path: pargs.free_from_str()?,
-        }),
-        Some("load") => Some(SubCommand::Load {
-            path: pargs.free_from_str()?,
-        }),
-        Some("queue") => Some(SubCommand::Queue),
-        Some("search") => Some(SubCommand::Search {
-            query: SearchQuery {
-                query: pargs
-                    .finish()
-                    .into_iter()
-                    .map(|os| os.into_string().unwrap())
-                    .collect(),
-            },
-        }),
-        Some("list") => Some(SubCommand::List {
-            tag: pargs.free_from_str()?,
-            query: SearchQuery {
-                query: pargs
-                    .finish()
-                    .into_iter()
-                    .map(|os| os.into_string().unwrap())
-                    .collect(),
-            },
-        }),
-        Some("read-comments") => Some(SubCommand::ReadComments {
-            file: pargs.free_from_str()?,
-        }),
-        Some("update") => Some(SubCommand::Update),
-        Some("status") => Some(SubCommand::Status),
-        Some("albumart") => Some(SubCommand::Albumart {
-            song_path: pargs.opt_free_from_str()?,
-            output: pargs.value_from_str(["--output", "-o"])?,
-        }),
-        Some("mv") => Some(SubCommand::Mv {
-            from: pargs.free_from_str()?,
-            to: pargs.free_from_str()?,
-        }),
-        Some("del") => Some(SubCommand::Del {
-            index: pargs.free_from_str()?,
-        }),
-        Some("seek") => Some(SubCommand::Seek {
-            position: pargs.free_from_str()?,
-        }),
-        Some("tab") => Some(SubCommand::Tab {
-            path: pargs.free_from_str()?,
-        }),
-        Some("help") => {
-            print_help();
-            std::process::exit(0);
-        }
-        Some(e) => {
-            let mut remaining = pargs.finish();
-            let cmd = e.into();
-            remaining.insert(0, cmd);
-            Some(SubCommand::Custom(remaining))
-        }
-    };
 
     Ok(Opts {
         host,
