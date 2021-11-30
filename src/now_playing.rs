@@ -1,15 +1,10 @@
-use crate::ansi::{is_dumb_terminal, FormattedString, Style};
+use crate::ansi::{FormattedString, Style};
 use crate::config::{Config, Tag};
-use crate::error::{Error, WithContext};
-use crate::filecache;
+use crate::error::Error;
 use crate::table::{Table, TableRow};
 use crate::tags::Tags;
-use mpd::{Client, Song};
-use std::io::Write;
-use std::ops::Add;
-use std::path::PathBuf;
 
-pub fn now_playing(client: &mut mpd::Client, cache: bool, conf: &Config) -> Result<(), Error> {
+pub fn now_playing(client: &mut mpd::Client, conf: &Config) -> Result<(), Error> {
     let song = match client.currentsong()? {
         None => {
             println!("Not playing.");
@@ -24,22 +19,6 @@ pub fn now_playing(client: &mut mpd::Client, cache: bool, conf: &Config) -> Resu
             .readcomments(&*song.file)?
             .collect::<Result<_, _>>()?,
     );
-
-    if !is_dumb_terminal() {
-        match fetch_albumart(&song, client, cache) {
-            Ok(albumart) => {
-                use std::process::Command;
-                Command::new("pica")
-                    .args(["-w", "500"])
-                    .arg(albumart)
-                    .spawn()
-                    .unwrap()
-                    .wait()
-                    .unwrap();
-            }
-            Err(e) => log::error!("Failed to fetch album art: {}", e),
-        }
-    }
 
     let table_rows = conf
         .tags
@@ -71,22 +50,6 @@ fn header(tags: &Tags) -> String {
     classical_work_description(tags)
         .or_else(|| popular_music_title(tags))
         .unwrap_or_else(|| "".to_string())
-}
-
-fn fetch_albumart(song: &Song, client: &mut Client, cache: bool) -> Result<PathBuf, Error> {
-    let cache_key = song.file.rsplit('/').skip(1).fold(String::new(), Add::add);
-
-    filecache::cache(
-        &*cache_key,
-        move |f| {
-            client.binarylimit(4_000_000)?;
-            let albumart = client.albumart(&*song.file)?;
-            f.write_all(&*albumart)
-                .context("writing album art to cache")?;
-            Ok(())
-        },
-        !cache,
-    )
 }
 
 fn classical_work_description(tags: &Tags) -> Option<String> {

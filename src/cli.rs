@@ -11,7 +11,7 @@ pub fn parse_args() -> Result<Opts, lexopt::Error> {
     logger::Logger(opts.verbose).init();
     if opts.subcommand.is_none() {
         log::trace!("No subcommand specified, defaulting to current.");
-        opts.subcommand = Some(SubCommand::Current { no_cache: false });
+        opts.subcommand = Some(SubCommand::Current);
     }
 
     if let Some(SubCommand::Custom(v)) = &opts.subcommand {
@@ -57,9 +57,7 @@ fn lexopt_parse_args() -> Result<Opts, lexopt::Error> {
             Value(cmd) => {
                 let cmd = cmd.into_string()?;
                 subcommand = Some(match &*cmd {
-                    "current" => SubCommand::Current {
-                        no_cache: Some(Long("no-cache")) == parser.next()?,
-                    },
+                    "current" => SubCommand::Current,
                     "play" => SubCommand::Play {
                         position: if let Some(Value(i)) = parser.next()? {
                             Some(i.parse()?)
@@ -214,10 +212,7 @@ pub struct Opts {
 
 pub enum SubCommand {
     /// Display the currently playing song.
-    Current {
-        /// Fetch new album art from MPD, ignoring any cached images..
-        no_cache: bool,
-    },
+    Current,
     /// Start playback.
     Play {
         /// Queue position to start playing from, defaults to 1.
@@ -342,7 +337,7 @@ SUBCOMMANDS:
     add <path>                   Add items in path to queue.
     albumart -o <output> [path]  Download albumart.
     clear                        Clear the current queue.
-    current [--no-cache]         Display the currently playing song.
+    current                      Display the currently playing song.
     del <index>                  Remove song at index from queue.
     help                         Prints this message.
     list <tag> [query]           List all values for tag filtered by query.

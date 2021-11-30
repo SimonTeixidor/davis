@@ -10,7 +10,6 @@ mod ansi;
 mod cli;
 mod config;
 mod error;
-mod filecache;
 mod logger;
 mod now_playing;
 mod queue;
@@ -55,7 +54,7 @@ fn try_main() -> Result<(), Error> {
     let mut c = Client::new(TcpStream::connect(&mpd_host_str).context("connecting to MPD")?)?;
 
     match opts.subcommand.expect("no subcommand, this is a bug.") {
-        SubCommand::Current { no_cache } => now_playing::now_playing(&mut c, !no_cache, &conf)?,
+        SubCommand::Current => now_playing::now_playing(&mut c, &conf)?,
         SubCommand::Play { position: Some(id) } => c.play_from_position(id.get() - 1)?,
         SubCommand::Play { position: None } => c.play()?,
         SubCommand::Pause => c.pause(true)?,

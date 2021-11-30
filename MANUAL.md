@@ -33,9 +33,8 @@ albumart -o <output> [path]
 clear
 	Clear the current queue.
 
-current [--no-cache]
-	Display the currently playing song. If --no-cache is specified, davis
-	fetches albumart from mpd and overwrites the value in cache.
+current
+	Display metadata about the currently playing song.
 
 del <index>
 	Remove song at index from queue.
