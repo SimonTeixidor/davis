@@ -5,7 +5,7 @@
 .nh
 .ad l
 .\" Begin generated content:
-.TH "davis" "1" "2021-11-30"
+.TH "davis" "1" "2021-12-02"
 .P
 .SH NAME
 davis - a command line interface for MPD.\&
@@ -27,12 +27,18 @@ Enable verbose output.\&
 .RE
 -h, --host <host>
 .RS 4
-Specify which MPD server to talk to, can be specified using IP/hostname,
-or a label defined in the config file.\&
+The MPD server to connect to, can be specified using IP/hostname, or a
+label defined in the config file.\&
 .RE
 -p, --plain
 .RS 4
 Disable decorations in output, useful for scripting.\&
+.P
+.RE
+.SH ENVIRONMENT VARIABLES
+MPD_HOST
+.RS 4
+The MPD server to connect to.\& Can also be set with \fB--host\fR.\&
 .P
 .RE
 .SH DAVIS COMMANDS:
@@ -214,5 +220,47 @@ More information on the MPD filter syntax is available at:
 https://mpd.\&readthedocs.\&io/en/latest/protocol.\&html#filters  
 .P
 .RE
+.SH CONFIGURATION
+Davis will read a configuration file from one of these locations:
+.P
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.IP \(bu 4
+.\}
+~/.\&config/davis/davis.\&conf
+.RE
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.IP \(bu 4
+.\}
+/etc/davis/davis.\&conf
+
+.RE
+.P
+The configuration file has two sections, tags and hosts.\& The tags section
+configures which tags davis should display when running the "current" command.\&
+The host section defines a list of MPD hosts for davis to connect to.\& Example
+file:
+.nf
+.RS 4
+[tags]
+# The list of enabled tags
+enabled=Composer,Work,Conductor,Ensemble,Performer,Label,Opus,RecordingDate,Rating,Genre,Location
+# Change the label of "RecordingDate" to "Recording Date"
+RecordingDate=Recording Date
+[hosts]
+# Connect to localhost by default
+default=127\&.0\&.0\&.1
+# Connect to another host using label rpi with the --host option\&.
+rpi=192\&.168\&.0\&.16
+.fi
+.RE
+.P
 .SH AUTHORS
 Simon Persson <simon@flaskpost.\&me>

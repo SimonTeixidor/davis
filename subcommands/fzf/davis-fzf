@@ -1,0 +1,48 @@
+#!/bin/sh
+
+set -eu
+
+TAGS=" artist album genre composer work "
+
+expr_reduce() {
+	awk -vFS="\n" 'NR > 1 { printf(" AND ") } { printf "%s", $1 }'
+}
+
+alternatives() {
+	EXPR="$1"
+	TAG="$2"
+
+	if [ -n "$EXPR" ]; then
+		davis list "$TAG" "($EXPR)"
+	else
+		davis list "$TAG"
+	fi
+}
+
+foo() {
+	EXPR="${1:-}"
+	LAST="${2-}"
+	echo "$EXPR"
+	case "$TAGS" in
+		*" $LAST "*)
+			NEW_TERMS="$(alternatives "$EXPR" "$LAST" | fzf -m | while read -r l; do echo "($LAST == \"$l\")"; done | expr_reduce)"
+			if [ -n "$EXPR" ]; then
+				EXPR="$EXPR AND $NEW_TERMS"
+			else
+				EXPR="$NEW_TERMS"
+			fi
+			foo "$EXPR"
+			;;
+		*)
+			SELECTED="$(echo "$TAGS path" | tr ' ' '\n' | grep -v '^$' | fzf)" || return 0
+			foo "$EXPR" "$SELECTED"
+			;;
+	esac
+}
+
+EXPR="$(foo | tail -n 1)"
+if [ -n "$EXPR" ]; then
+	davis clear
+	davis search "($EXPR)" | rev | cut -d/ -f2- | rev | sort -u | xargs -d'\n' davis add
+	davis play
+fi

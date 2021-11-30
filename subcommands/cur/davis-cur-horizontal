@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Requires the cover subcommand to be installed
+davis cover;
+
+# Needs to be tuned for your font and image size
+IMAGE_CHAR_WIDTH=38
+IMAGE_CHAR_HEIGHT=15
+
+printf '\033[%sA' "$IMAGE_CHAR_HEIGHT"
+davis current | while read line; do
+	printf '\033[%sC' "$IMAGE_CHAR_WIDTH" 
+	echo "$line"
+done

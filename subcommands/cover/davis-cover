@@ -1,0 +1,9 @@
+#!/bin/sh
+
+CACHE_PATH="$HOME/.cache/davis/covers/$(davis status -p | grep '^Song' | sha256sum | awk '{ print $1 }')"
+mkdir -p "$(dirname "$CACHE_PATH")"
+if [ -e "$CACHE_PATH" ]; then
+	cat "$CACHE_PATH"
+else
+	davis albumart --output - | picat -w 500 | tee "$CACHE_PATH"
+fi

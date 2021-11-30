@@ -15,10 +15,14 @@ Davis is a command line interface for MPD.
 \-v, --verbose
 	Enable verbose output.
 \-h, --host <host>
-	Specify which MPD server to talk to, can be specified using IP/hostname,
-	or a label defined in the config file.
+	The MPD server to connect to, can be specified using IP/hostname, or a
+	label defined in the config file.
 \-p, --plain
 	Disable decorations in output, useful for scripting.
+
+# ENVIRONMENT VARIABLES
+MPD_HOST
+	The MPD server to connect to. Can also be set with *--host*.
 
 # DAVIS COMMANDS:
 add <path>
@@ -121,6 +125,30 @@ Or a list of arguments-pairs, each pair corresponding to a filter, such as:
 	davis search artist 'Miles Davis' album 'Kind Of Blue'         
 More information on the MPD filter syntax is available at:         
 	https://mpd.readthedocs.io/en/latest/protocol.html#filters  
+
+# CONFIGURATION
+Davis will read a configuration file from one of these locations:
+
+- ~/.config/davis/davis.conf
+- /etc/davis/davis.conf
+
+The configuration file has two sections, tags and hosts. The tags section
+configures which tags davis should display when running the "current" command.
+The host section defines a list of MPD hosts for davis to connect to. Example
+file:
+
+```
+[tags]
+# The list of enabled tags
+enabled=Composer,Work,Conductor,Ensemble,Performer,Label,Opus,RecordingDate,Rating,Genre,Location
+# Change the label of "RecordingDate" to "Recording Date"
+RecordingDate=Recording Date
+\[hosts]
+# Connect to localhost by default
+default=127.0.0.1
+# Connect to another host using label rpi with the --host option.
+rpi=192.168.0.16
+```
 
 # AUTHORS
 Simon Persson <simon@flaskpost.me>
