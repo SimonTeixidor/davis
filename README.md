@@ -16,6 +16,10 @@ With a custom subcommand (here [`davis-cur`](subcommands/cur/)), it is also
 possible to display the album art as sixel graphics in the terminal:
 ![screenshot of davis cover](scrots/cur.png)
 
+### Davis understands classical music
+Davis will group your queue by work, and displays movement tags instead of title:
+![screenshot of davis queue](scrots/queue.png)
+
 ### Custom subcommands
 Davis can be extended with custom subcommands (here [`davis-fzf`](subcommands/fzf/)):
 ![screencast of davis fzf](scrots/fzf.webp)
