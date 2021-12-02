@@ -31,15 +31,6 @@ impl Tags {
         tags
     }
 
-    pub fn get_option<'a>(&'a self, tag: &'a str) -> Option<Vec<&'a str>> {
-        let vals = self.get(tag);
-        if vals.is_empty() {
-            None
-        } else {
-            Some(vals)
-        }
-    }
-
     pub fn get_option_joined<'a>(&'a self, tag: &'a str) -> Option<String> {
         let vals = self.get(tag);
         if vals.is_empty() {

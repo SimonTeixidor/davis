@@ -24,17 +24,13 @@ pub fn now_playing(client: &mut mpd::Client, conf: &Config) -> Result<(), Error>
         .tags
         .iter()
         .map(|Tag { tag, label }| {
-            tags.get_option(&*tag)
-                .as_ref()
+            tags.get(&*tag)
                 .iter()
-                .flat_map(|values| {
-                    values.iter().map(|value| {
-                        TableRow::new(vec![
-                            FormattedString::new(&*label.as_ref().unwrap_or(tag))
-                                .style(Style::Bold),
-                            FormattedString::new(*value),
-                        ])
-                    })
+                .map(|value| {
+                    TableRow::new(vec![
+                        FormattedString::new(&*label.as_ref().unwrap_or(tag)).style(Style::Bold),
+                        FormattedString::new(*value),
+                    ])
                 })
                 .collect::<Vec<_>>()
         })
@@ -54,12 +50,8 @@ fn header(tags: &Tags) -> String {
 
 fn classical_work_description(tags: &Tags) -> Option<String> {
     let title = tags
-        .get_option_joined("MOVEMENTNUMBER")
-        .and_then(|n| {
-            tags.get_option_joined("MOVEMENT")
-                .map(|m| format!("{}. {}", n, m))
-        })
-        .or_else(|| tags.get_option_joined("TITLE").map(String::from))?;
+        .joined(&["MOVEMENTNUMBER", "MOVEMENT"], ". ")
+        .or_else(|| tags.get_option_joined("TITLE"))?;
 
     Some(format!(
         "{}\n{}\n{}\n",

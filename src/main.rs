@@ -133,17 +133,8 @@ fn mpd_host(opts: &cli::Opts, conf: &config::Config) -> String {
         log::trace!("Found MPD_HOST environment variable: {}", host);
         lookup_mpd_host(&*host, conf)
     } else if let Some(host) = &opts.host {
-        if let Some(host_config) = conf.hosts.iter().find(|h| &*h.label == host) {
-            log::trace!(
-                "MPD host passed as label {}, and resolved to host: {}",
-                host,
-                host_config.host
-            );
-            host_config.host.clone()
-        } else {
-            log::trace!("Using MPD host {} from command line", host);
-            host.clone()
-        }
+        log::trace!("Found MPD host in command line arguments: {}", host);
+        lookup_mpd_host(&*host, conf)
     } else {
         conf.default_mpd_host()
     }
