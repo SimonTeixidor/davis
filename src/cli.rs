@@ -169,7 +169,7 @@ fn parse_subcommand(
             position: next_arg("position", parser)?,
         },
         "tab" => SubCommand::Tab {
-            path: next_arg("path", parser)?,
+            path: next_arg("path", parser).unwrap_or_else(|_| "".into()),
         },
         cmd => {
             let mut remaining = vec![];
@@ -281,29 +281,29 @@ OPTIONS:
     -h, --host <host>  IP/hostname or a label defined in the config file.
 
 SUBCOMMANDS:
-    add <path>                   Add items in path to queue.
-    albumart -o <output> [path]  Download albumart.
-    clear                        Clear the current queue.
-    current                      Display the currently playing song.
-    del <index>                  Remove song at index from queue.
-    help                         Prints this message.
-    list <tag> [query]           List all values for tag filtered by query.
-    load <path>                  Load playlist at path to queue.
-    ls [path]                    List items in path.
-    mv <from> <to>               Move song in queue by index.
-    next                         Skip to next song in queue.
-    pause                        Pause playback.
-    play                         Continue playback from current state.
-    play [index]                 Start playback from index in queue.
-    prev                         Go back to previous song in queue.
-    queue                        Display the current queue.
-    read-comments <file>         Read raw metadata tags for file.
-    search <query>               Search for files matching query.
-    seek <position>              Seek to position.
-    status                       Display MPD status.
-    stop                         Stop playback.
-    toggle                       Toggle between play/pause.
-    update                       Update the MPD database.
+    davis add <path>                   Add items in path to queue.
+    davis albumart -o <output> [path]  Download albumart.
+    davis clear                        Clear the current queue.
+    davis current                      Display the currently playing song.
+    davis del <index>                  Remove song at index from queue.
+    davis help                         Prints this message.
+    davis list <tag> [query]           List values for tag filtered by query.
+    davis load <path>                  Load playlist at path to queue.
+    davis ls [path]                    List items in path.
+    davis mv <from> <to>               Move song in queue by index.
+    davis next                         Skip to next song in queue.
+    davis pause                        Pause playback.
+    davis play                         Continue playback from current state.
+    davis play [index]                 Start playback from index in queue.
+    davis prev                         Go back to previous song in queue.
+    davis queue                        Display the current queue.
+    davis read-comments <file>         Read raw metadata tags for file.
+    davis search <query>               Search for files matching query.
+    davis seek <position>              Seek to position.
+    davis status                       Display MPD status.
+    davis stop                         Stop playback.
+    davis toggle                       Toggle between play/pause.
+    davis update                       Update the MPD database.
 
 QUERY:
     A query can either be a single argument in the MPD filter syntax, such as:

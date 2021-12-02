@@ -21,3 +21,7 @@ Davis can be extended with custom subcommands (here [`davis-fzf`](subcommands/fz
 ![screencast of davis fzf](scrots/fzf.webp)
 
 See the [manual](MANUAL.txt) for details on how to add new subcommands.
+
+### Shell completions
+Shell completion (tab-complete) is available in `/completions`. Only bash is
+currently supported, but PRs for other shells are very welcome!
