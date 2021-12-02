@@ -2,18 +2,18 @@ use crate::ansi::{is_dumb_terminal, FormattedString};
 use std::collections::HashMap;
 use std::fmt;
 
-pub struct TableRow<'a> {
+pub struct Row<'a> {
     fields: Vec<FormattedString<'a>>,
 }
 
-impl<'a> TableRow<'a> {
-    pub fn new(fields: Vec<FormattedString<'a>>) -> TableRow<'a> {
-        TableRow { fields }
+impl<'a> Row<'a> {
+    pub fn new(fields: Vec<FormattedString<'a>>) -> Row<'a> {
+        Row { fields }
     }
 }
 
 pub struct Table<'a> {
-    pub rows: &'a [TableRow<'a>],
+    pub rows: &'a [Row<'a>],
 }
 
 impl<'a> fmt::Display for Table<'a> {
@@ -21,9 +21,7 @@ impl<'a> fmt::Display for Table<'a> {
         let widths = self
             .rows
             .iter()
-            .flat_map(|TableRow { fields }| {
-                fields.iter().enumerate().map(|(i, f)| (i, f.string.len()))
-            })
+            .flat_map(|Row { fields }| fields.iter().enumerate().map(|(i, f)| (i, f.string.len())))
             .fold(HashMap::<usize, usize>::new(), |mut m, (i, len)| {
                 m.entry(i)
                     .and_modify(|cur| *cur = (*cur).max(len))
@@ -31,7 +29,7 @@ impl<'a> fmt::Display for Table<'a> {
                 m
             });
 
-        for (i, TableRow { fields }) in self.rows.iter().enumerate() {
+        for (i, Row { fields }) in self.rows.iter().enumerate() {
             if i != 0 {
                 writeln!(formatter)?;
             }
@@ -60,10 +58,7 @@ mod test {
         let val1 = FormattedString::new("val");
         let key2 = FormattedString::new("key");
         let val2 = FormattedString::new("val");
-        let rows = [
-            TableRow::new(vec![key1, val1]),
-            TableRow::new(vec![key2, val2]),
-        ];
+        let rows = [Row::new(vec![key1, val1]), Row::new(vec![key2, val2])];
         let table = Table { rows: &rows };
         let result = format!("{:100}", table);
         let expected = "long_key val\n\
@@ -77,10 +72,7 @@ mod test {
         let val1 = FormattedString::new("val").style(Style::Bold);
         let key2 = FormattedString::new("key").style(Style::Faint);
         let val2 = FormattedString::new("val").style(Style::Bold);
-        let rows = [
-            TableRow::new(vec![key1, val1]),
-            TableRow::new(vec![key2, val2]),
-        ];
+        let rows = [Row::new(vec![key1, val1]), Row::new(vec![key2, val2])];
         let table = Table { rows: &rows };
         let result = format!("{}", table);
         let expected = "\x1B[2mlong_key \x1B[0m\x1B[1mval\x1B[0m\n\

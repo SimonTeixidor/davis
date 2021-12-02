@@ -13,7 +13,9 @@ impl log::Log for Logger {
     }
 
     fn flush(&self) {
-        let _ = std::io::stderr().flush();
+        if let Err(e) = std::io::stderr().flush() {
+            log::trace!("Failed to flush stderr: {}", e);
+        }
     }
 }
 

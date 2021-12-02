@@ -44,7 +44,7 @@ fn main() {
 
 fn try_main() -> Result<(), Error> {
     let opts = cli::parse_args()?;
-    let conf = config::get_config()?;
+    let conf = config::get();
 
     let mpd_host = mpd_host(&opts, &conf);
     let mpd_host_str = format!("{}:6600", &mpd_host);
@@ -60,7 +60,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Pause => c.pause(true)?,
         SubCommand::Toggle => c.toggle_pause()?,
         SubCommand::Ls { path } => {
-            let path = path.as_ref().map(|s| trim_path(&*s)).unwrap_or("");
+            let path = path.as_ref().map_or("", |s| trim_path(&*s));
             for entry in c.lsinfo(path)? {
                 match entry {
                     LsInfoResponse::Song(Song { file, .. }) => println!("{}", file),
@@ -75,7 +75,7 @@ fn try_main() -> Result<(), Error> {
         SubCommand::Stop => c.stop()?,
         SubCommand::Add { path } => c.add(&*trim_path(&*path))?,
         SubCommand::Load { path } => c.load(&*path, ..)?,
-        SubCommand::Queue => queue::print(c.queue()?, c.currentsong()?),
+        SubCommand::Queue => queue::print(c.queue()?, &c.currentsong()?),
         SubCommand::Search { query } => {
             for song in c.search(&query.to_mpd_query(), None)? {
                 println!("{}", song.file);
@@ -93,7 +93,7 @@ fn try_main() -> Result<(), Error> {
             let table_rows = table_rows
                 .iter()
                 .map(|(k, v)| {
-                    table::TableRow::new(vec![
+                    table::Row::new(vec![
                         ansi::FormattedString::new(k).style(ansi::Style::Bold),
                         ansi::FormattedString::new(v),
                     ])
@@ -106,12 +106,12 @@ fn try_main() -> Result<(), Error> {
         }
         SubCommand::Status => status::status(&mut c)?,
         SubCommand::Albumart { song_path, output } => {
-            albumart::fetch_albumart(&mut c, song_path.as_deref(), &*output)?;
+            albumart::fetch(&mut c, song_path.as_deref(), &*output)?;
         }
         SubCommand::Mv { from, to } => {
-            c.move_range(from.get() - 1..=from.get() - 1, to.get() - 1)?
+            c.move_range(from.get() - 1..from.get(), to.get() - 1)?;
         }
-        SubCommand::Del { index } => c.delete(index.get() - 1..=index.get() - 1)?,
+        SubCommand::Del { index } => c.delete(index.get() - 1..index.get())?,
         SubCommand::Seek { position } => seek::seek(&mut c, position)?,
         SubCommand::Tab { path } => tab::complete(&mut c, &*path)?,
         SubCommand::Custom(args) => {

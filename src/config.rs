@@ -56,7 +56,7 @@ impl Default for Config {
             tags: DEFAULT_TAGS
                 .iter()
                 .map(|t| Tag {
-                    tag: t.to_string(),
+                    tag: (*t).to_string(),
                     label: None,
                 })
                 .collect(),
@@ -64,7 +64,7 @@ impl Default for Config {
     }
 }
 
-pub fn get_config() -> Result<Config, Error> {
+pub fn get() -> Config {
     let home = env::var("HOME").expect("$HOME was not set!");
     let home_config_path: PathBuf = [&*home, ".config", "davis", "davis.conf"].iter().collect();
     let etc_config_path: PathBuf = ["/", "etc", "davis", "davis.conf"].iter().collect();
@@ -78,7 +78,7 @@ pub fn get_config() -> Result<Config, Error> {
             log::trace!("Read config from {:?}", f);
             let mut buf = String::new();
             f.read_to_string(&mut buf).context("reading config file")?;
-            parse_config(Ini::new_cs().read(buf).map_err(Error::Config)?)
+            parse_config(&Ini::new_cs().read(buf).map_err(Error::Config)?)
         }) {
         Ok(f) => {
             conf = f;
@@ -92,14 +92,11 @@ pub fn get_config() -> Result<Config, Error> {
         _ => log::trace!("No config file found, using default."),
     }
 
-    Ok(conf)
+    conf
 }
 
-fn parse_config(map: HashMap<String, HashMap<String, Option<String>>>) -> Result<Config, Error> {
-    let hosts = map
-        .get("hosts")
-        .map(parse_hosts)
-        .unwrap_or_else(|| Ok(vec![]))?;
+fn parse_config(map: &HashMap<String, HashMap<String, Option<String>>>) -> Result<Config, Error> {
+    let hosts = map.get("hosts").map_or_else(|| Ok(vec![]), parse_hosts)?;
 
     let tags = map
         .get("tags")
@@ -124,7 +121,7 @@ fn parse_hosts(map: &HashMap<String, Option<String>>) -> Result<Vec<Host>, Error
 
 fn parse_tags(map: &HashMap<String, Option<String>>) -> Option<Vec<Tag>> {
     map.get("enabled")
-        .and_then(|e| e.as_ref())
+        .and_then(Option::as_ref)
         .map(|e| e.split(','))
         .map(|ts| {
             ts.map(|t| Tag {

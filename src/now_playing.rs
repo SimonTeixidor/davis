@@ -1,7 +1,7 @@
 use crate::ansi::{FormattedString, Style};
 use crate::config::{Config, Tag};
 use crate::error::Error;
-use crate::table::{Table, TableRow};
+use crate::table::{Row, Table};
 use crate::tags::Tags;
 
 pub fn now_playing(client: &mut mpd::Client, conf: &Config) -> Result<(), Error> {
@@ -27,14 +27,14 @@ pub fn now_playing(client: &mut mpd::Client, conf: &Config) -> Result<(), Error>
             tags.get(&*tag)
                 .iter()
                 .map(|value| {
-                    TableRow::new(vec![
+                    Row::new(vec![
                         FormattedString::new(&*label.as_ref().unwrap_or(tag)).style(Style::Bold),
                         FormattedString::new(*value),
                     ])
                 })
                 .collect::<Vec<_>>()
         })
-        .flat_map(|v| v.into_iter())
+        .flat_map(IntoIterator::into_iter)
         .collect::<Vec<_>>();
 
     println!("{}", header(&tags));

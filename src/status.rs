@@ -1,6 +1,6 @@
 use crate::ansi::{FormattedString, Style};
 use crate::error::Error;
-use crate::table::{Table, TableRow};
+use crate::table::{Row, Table};
 use std::time::Duration;
 
 pub fn status(c: &mut mpd::Client) -> Result<(), Error> {
@@ -22,10 +22,10 @@ pub fn status(c: &mut mpd::Client) -> Result<(), Error> {
 
     let time = status.time.map(|(current, total)| {
         format!(
-            "{}/{} ({:2}%)",
+            "{}/{} ({:2.0}%)",
             duration_format(&current),
             duration_format(&total),
-            (100. * current.as_secs_f64() / total.as_secs_f64()) as u32
+            (100. * current.as_secs_f64() / total.as_secs_f64()).trunc()
         )
     });
 
@@ -55,8 +55,8 @@ pub fn status(c: &mut mpd::Client) -> Result<(), Error> {
 }
 
 // Table row with bold key and normal value
-fn table_row<'a>(key: &'a str, val: &'a str) -> TableRow<'a> {
-    TableRow::new(vec![
+fn table_row<'a>(key: &'a str, val: &'a str) -> Row<'a> {
+    Row::new(vec![
         FormattedString::new(key).style(Style::Bold),
         FormattedString::new(val),
     ])

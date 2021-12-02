@@ -1,23 +1,29 @@
 use crate::error::Error;
+use std::convert::TryFrom;
 use std::str::FromStr;
 
-pub fn seek(client: &mut mpd::Client, seek_arg: SeekArg) -> Result<(), Error> {
+pub fn seek(client: &mut mpd::Client, seek_arg: Arg) -> Result<(), Error> {
     let status = client.status()?;
-    let currentsongid = match client.currentsong()?.and_then(|s| s.place) {
-        Some(place) => place.id,
-        None => {
-            println!("Not plaing.");
-            std::process::exit(1);
-        }
+    let currentsongid = if let Some(place) = client.currentsong()?.and_then(|s| s.place) {
+        place.id
+    } else {
+        println!("Not plaing.");
+        std::process::exit(1);
     };
 
     match (seek_arg.direction, status.elapsed) {
         (SeekDirection::Absolute, _) => client.seek_id(currentsongid, seek_arg.seconds)?,
         (SeekDirection::Forward, Some(e)) => {
-            client.seek_id(currentsongid, e.as_secs() as u32 + seek_arg.seconds)?
+            client.seek_id(
+                currentsongid,
+                u32::try_from(e.as_secs()).expect("Time does not fit in u32") + seek_arg.seconds,
+            )?;
         }
         (SeekDirection::Back, Some(e)) => {
-            client.seek_id(currentsongid, e.as_secs() as u32 - seek_arg.seconds)?
+            client.seek_id(
+                currentsongid,
+                u32::try_from(e.as_secs()).expect("Time does not fit in u32") - seek_arg.seconds,
+            )?;
         }
         _ => (),
     }
@@ -33,12 +39,12 @@ enum SeekDirection {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct SeekArg {
+pub struct Arg {
     direction: SeekDirection,
     seconds: u32,
 }
 
-impl FromStr for SeekArg {
+impl FromStr for Arg {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -62,10 +68,10 @@ impl FromStr for SeekArg {
             .iter()
             .rev()
             .enumerate()
-            .map(|(i, v)| v * 60u32.pow(i as u32))
+            .map(|(i, v)| v * 60_u32.pow(u32::try_from(i).expect("Counter does not fit in u32")))
             .sum();
 
-        Ok(SeekArg { direction, seconds })
+        Ok(Arg { direction, seconds })
     }
 }
 
@@ -76,16 +82,16 @@ mod tests {
     #[test]
     fn test_hms() {
         assert_eq!(
-            SeekArg::from_str("+1:2:3").unwrap(),
-            SeekArg {
+            Arg::from_str("+1:2:3").unwrap(),
+            Arg {
                 direction: SeekDirection::Forward,
                 seconds: 1 * 60 * 60 + 2 * 60 + 3
             }
         );
 
         assert_eq!(
-            SeekArg::from_str("0:2:3").unwrap(),
-            SeekArg {
+            Arg::from_str("0:2:3").unwrap(),
+            Arg {
                 direction: SeekDirection::Absolute,
                 seconds: 2 * 60 + 3
             }
@@ -95,8 +101,8 @@ mod tests {
     #[test]
     fn test_ms() {
         assert_eq!(
-            SeekArg::from_str("+2:3").unwrap(),
-            SeekArg {
+            Arg::from_str("+2:3").unwrap(),
+            Arg {
                 direction: SeekDirection::Forward,
                 seconds: 2 * 60 + 3
             }
@@ -106,8 +112,8 @@ mod tests {
     #[test]
     fn test_s() {
         assert_eq!(
-            SeekArg::from_str("3").unwrap(),
-            SeekArg {
+            Arg::from_str("3").unwrap(),
+            Arg {
                 direction: SeekDirection::Absolute,
                 seconds: 3
             }
@@ -117,8 +123,8 @@ mod tests {
     #[test]
     fn test_leading_zeroes() {
         assert_eq!(
-            SeekArg::from_str("01:01:01").unwrap(),
-            SeekArg {
+            Arg::from_str("01:01:01").unwrap(),
+            Arg {
                 direction: SeekDirection::Absolute,
                 seconds: 60 * 60 * 1 + 60 * 1 + 1
             }

@@ -1,5 +1,5 @@
 use crate::ansi::{FormattedString, Style};
-use crate::table::{Table, TableRow};
+use crate::table::{Row, Table};
 use crate::tags::Tags;
 use mpd::Song;
 
@@ -22,8 +22,8 @@ struct QueueRow {
 }
 
 impl QueueRow {
-    fn to_table_row(&self) -> TableRow {
-        TableRow::new(
+    fn to_table_row(&self) -> Row {
+        Row::new(
             self.fields
                 .iter()
                 .map(|s| {
@@ -41,12 +41,12 @@ impl QueueRow {
 fn print_table(rows: &[QueueRow]) {
     let table_rows = rows
         .iter()
-        .map(|r| r.to_table_row())
-        .collect::<Vec<TableRow>>();
+        .map(QueueRow::to_table_row)
+        .collect::<Vec<Row>>();
     println!("{}", Table { rows: &*table_rows });
 }
 
-pub fn print(queue: Vec<Song>, current: Option<Song>) {
+pub fn print(queue: Vec<Song>, current: &Option<Song>) {
     let mut cur_header = None;
     let mut rows: Vec<QueueRow> = Vec::new();
     for (pos, song) in queue.into_iter().enumerate() {

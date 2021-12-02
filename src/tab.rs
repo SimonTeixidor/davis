@@ -12,7 +12,7 @@ pub fn complete(client: &mut mpd::Client, search_path: &str) -> Result<(), Error
             LsInfoResponse::Playlist { path, .. } | LsInfoResponse::Directory { path, .. }
                 if path.starts_with(search_path) =>
             {
-                println!("{}", path)
+                println!("{}", path);
             }
             _ => (),
         }
