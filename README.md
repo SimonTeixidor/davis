@@ -26,6 +26,12 @@ Davis can be extended with custom subcommands (here [`davis-fzf`](subcommands/fz
 
 See the [manual](MANUAL.txt) for details on how to add new subcommands.
 
-### Shell completions
+## Installing
+You will need a rust toolchain. To install, you run
+```
+cargo install davis
+```
+
+## Shell completions
 Shell completion (tab-complete) is available in `/completions`. Only bash is
 currently supported, but PRs for other shells are very welcome!
