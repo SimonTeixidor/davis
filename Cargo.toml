@@ -2,7 +2,7 @@
 name = "davis"
 version = "0.1.0"
 authors = ["Simon Persson <simon@flaskpost.me>"]
-edition = "2018"
+edition = "2021"
 
 [[bin]]
 name = "davis"
