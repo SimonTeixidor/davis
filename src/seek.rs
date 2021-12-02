@@ -2,7 +2,7 @@ use crate::error::Error;
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-pub fn seek(client: &mut mpd::Client, seek_arg: Arg) -> Result<(), Error> {
+pub fn seek(client: &mut mpdrs::Client, seek_arg: Arg) -> Result<(), Error> {
     let status = client.status()?;
     let currentsongid = if let Some(place) = client.currentsong()?.and_then(|s| s.place) {
         place.id

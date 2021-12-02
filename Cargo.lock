@@ -28,7 +28,7 @@ dependencies = [
  "lexopt",
  "libc",
  "log",
- "mpd",
+ "mpdrs",
 ]
 
 [[package]]
@@ -53,9 +53,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "mpd"
+name = "mpdrs"
 version = "0.1.0"
-source = "git+https://github.com/SimonPersson/rust-mpd.git#e67c8a2a77ca9a32352d62a45782ac0ee9b9978e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dec81b7ee8968b02af77c52cbcee75a33e83924a4322090f3d83075bd2032686"
 dependencies = [
  "bufstream",
 ]

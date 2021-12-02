@@ -4,7 +4,7 @@ pub struct Tags {
 }
 
 impl Tags {
-    pub fn from_song(song: &mpd::Song) -> Tags {
+    pub fn from_song(song: &mpdrs::Song) -> Tags {
         Tags {
             native_mpd: song.tags.clone(),
             raw_comments: vec![],
@@ -12,7 +12,7 @@ impl Tags {
     }
 
     pub fn from_song_and_raw_comments(
-        song: &mpd::Song,
+        song: &mpdrs::Song,
         raw_comments: Vec<(String, String)>,
     ) -> Tags {
         Tags {

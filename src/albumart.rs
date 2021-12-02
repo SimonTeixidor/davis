@@ -1,5 +1,5 @@
 use crate::error::{Error, WithContext};
-use mpd::client::Client;
+use mpdrs::client::Client;
 use std::fs::File;
 use std::io::Write;
 use std::process::exit;

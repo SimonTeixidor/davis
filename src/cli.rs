@@ -248,15 +248,15 @@ pub struct SearchQuery {
 }
 
 impl SearchQuery {
-    pub fn to_mpd_query(&self) -> mpd::Query {
+    pub fn to_mpd_query(&self) -> mpdrs::Query {
         if self.query.len() == 1 {
-            mpd::Query::Expression(self.query[0].clone())
+            mpdrs::Query::Expression(self.query[0].clone())
         } else {
-            let mut query = mpd::FilterQuery::new();
+            let mut query = mpdrs::FilterQuery::new();
             for slice in self.query.chunks(2) {
-                query.and(mpd::Term::Tag(&*slice[0]), &*slice[1]);
+                query.and(mpdrs::Term::Tag(&*slice[0]), &*slice[1]);
             }
-            mpd::Query::Filters(query)
+            mpdrs::Query::Filters(query)
         }
     }
 }

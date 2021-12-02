@@ -3,7 +3,7 @@ use crate::error::Error;
 use crate::table::{Row, Table};
 use std::time::Duration;
 
-pub fn status(c: &mut mpd::Client) -> Result<(), Error> {
+pub fn status(c: &mut mpdrs::Client) -> Result<(), Error> {
     let song = c.currentsong()?;
     let status = c.status()?;
 
@@ -34,9 +34,9 @@ pub fn status(c: &mut mpd::Client) -> Result<(), Error> {
     }
 
     let state = match status.state {
-        mpd::State::Play => "playing",
-        mpd::State::Pause => "paused",
-        mpd::State::Stop => "Stopped",
+        mpdrs::State::Play => "playing",
+        mpdrs::State::Pause => "paused",
+        mpdrs::State::Stop => "Stopped",
     };
     table_rows.push(table_row("State", state));
 

@@ -1,7 +1,7 @@
 use crate::error::Error;
-use mpd::lsinfo::LsInfoResponse;
+use mpdrs::lsinfo::LsInfoResponse;
 
-pub fn complete(client: &mut mpd::Client, search_path: &str) -> Result<(), Error> {
+pub fn complete(client: &mut mpdrs::Client, search_path: &str) -> Result<(), Error> {
     let prefix_path = match search_path.rfind('/') {
         Some(i) => &search_path[..i],
         None => "",

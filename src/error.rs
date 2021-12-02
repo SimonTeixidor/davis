@@ -3,7 +3,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum Error {
-    Mpd(mpd::error::Error),
+    Mpd(mpdrs::error::Error),
     Io {
         context: &'static str,
         error: std::io::Error,
@@ -15,8 +15,8 @@ pub enum Error {
 
 impl StdErr for Error {}
 
-impl From<mpd::error::Error> for Error {
-    fn from(e: mpd::error::Error) -> Self {
+impl From<mpdrs::error::Error> for Error {
+    fn from(e: mpdrs::error::Error) -> Self {
         Error::Mpd(e)
     }
 }

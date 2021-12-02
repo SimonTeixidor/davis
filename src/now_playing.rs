@@ -4,7 +4,7 @@ use crate::error::Error;
 use crate::table::{Row, Table};
 use crate::tags::Tags;
 
-pub fn now_playing(client: &mut mpd::Client, conf: &Config) -> Result<(), Error> {
+pub fn now_playing(client: &mut mpdrs::Client, conf: &Config) -> Result<(), Error> {
     let song = match client.currentsong()? {
         None => {
             println!("Not playing.");

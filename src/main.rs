@@ -1,6 +1,6 @@
-use mpd::lsinfo::LsInfoResponse;
-use mpd::Client;
-use mpd::Song;
+use mpdrs::lsinfo::LsInfoResponse;
+use mpdrs::Client;
+use mpdrs::Song;
 use std::net::TcpStream;
 use std::process::Command;
 use std::sync::atomic::Ordering;
@@ -82,7 +82,7 @@ fn try_main() -> Result<(), Error> {
             }
         }
         SubCommand::List { tag, query } => {
-            for val in c.list(&mpd::Term::Tag(&*tag), &query.to_mpd_query())? {
+            for val in c.list(&mpdrs::Term::Tag(&*tag), &query.to_mpd_query())? {
                 println!("{}", val);
             }
         }

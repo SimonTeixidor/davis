@@ -1,7 +1,7 @@
 use crate::ansi::{FormattedString, Style};
 use crate::table::{Row, Table};
 use crate::tags::Tags;
-use mpd::Song;
+use mpdrs::Song;
 
 pub fn bold<S: AsRef<str>>(s: S) -> String {
     FormattedString::new(s.as_ref())
