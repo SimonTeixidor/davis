@@ -3,6 +3,8 @@ name = "davis"
 version = "0.1.0"
 authors = ["Simon Persson <simon@flaskpost.me>"]
 edition = "2021"
+description = "An CLI client for MPD."
+license = "GPL-3.0"
 
 [[bin]]
 name = "davis"
