@@ -3,6 +3,7 @@ use crate::config::{Config, Tag};
 use crate::error::Error;
 use crate::table::{Row, Table};
 use crate::tags::Tags;
+use mpdrs::Song;
 
 pub fn now_playing(client: &mut mpdrs::Client, conf: &Config) -> Result<(), Error> {
     let song = match client.currentsong()? {
@@ -37,15 +38,17 @@ pub fn now_playing(client: &mut mpdrs::Client, conf: &Config) -> Result<(), Erro
         .flat_map(IntoIterator::into_iter)
         .collect::<Vec<_>>();
 
-    println!("{}", header(&tags));
-    println!("{}", Table { rows: &*table_rows },);
+    println!("{}", header(&song, &tags));
+    if !table_rows.is_empty() {
+        println!("\n{}", Table { rows: &*table_rows },);
+    }
     Ok(())
 }
 
-fn header(tags: &Tags) -> String {
+fn header(song: &Song, tags: &Tags) -> String {
     classical_work_description(tags)
-        .or_else(|| popular_music_title(tags))
-        .unwrap_or_else(|| "".to_string())
+        .or_else(|| popular_music_title(song))
+        .unwrap_or_else(|| song.file.clone())
 }
 
 fn classical_work_description(tags: &Tags) -> Option<String> {
@@ -54,17 +57,17 @@ fn classical_work_description(tags: &Tags) -> Option<String> {
         .or_else(|| tags.get_option_joined("TITLE"))?;
 
     Some(format!(
-        "{}\n{}\n{}\n",
+        "{}\n{}\n{}",
         FormattedString::new(&*tags.get_option_joined("COMPOSER")?).style(Style::Bold),
         FormattedString::new(&*tags.get_option_joined("WORK")?).style(Style::Bold),
         FormattedString::new(&*title).style(Style::Bold)
     ))
 }
 
-fn popular_music_title(tags: &Tags) -> Option<String> {
+fn popular_music_title(song: &Song) -> Option<String> {
     Some(format!(
-        "{}\n{}\n",
-        FormattedString::new(&*tags.get_option_joined("ARTIST")?).style(Style::Bold),
-        FormattedString::new(&*tags.get_option_joined("TITLE")?).style(Style::Bold),
+        "{}\n{}",
+        FormattedString::new(song.artist.as_deref()?).style(Style::Bold),
+        FormattedString::new(&*song.title.as_deref()?).style(Style::Bold),
     ))
 }
