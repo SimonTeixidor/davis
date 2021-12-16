@@ -49,6 +49,8 @@ fn print_table(rows: &[QueueRow]) {
 pub fn print(queue: Vec<Song>, current: &Option<Song>) {
     let mut cur_header = None;
     let mut rows: Vec<QueueRow> = Vec::new();
+    let max_pos = queue.len();
+    let pos_width = (max_pos as f32).log10() as usize + 1;
     for (pos, song) in queue.into_iter().enumerate() {
         let pos = pos + 1;
         if let Some(h) = header(&song).filter(|h| Some(h) != cur_header.as_ref()) {
@@ -67,7 +69,7 @@ pub fn print(queue: Vec<Song>, current: &Option<Song>) {
             .collect::<Option<Vec<String>>>()
             .or_else(|| song.title.clone().map(|t| vec![t]))
             .unwrap_or_else(|| vec![song.file.clone()]);
-        fields.insert(0, pos.to_string());
+        fields.insert(0, format!("{: <width$}", pos, width = pos_width));
         rows.push(QueueRow {
             is_current: Some(&song) == current.as_ref(),
             fields,
