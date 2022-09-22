@@ -90,7 +90,7 @@ search <query>
 
 seek <position>             
 	Seek to position. The position is expressed in [+-][[hh:]:mm]:ss format. If
-	+ or - is used, the seek is done relative to the current positon.
+	+ or - is used, the seek is done relative to the current position.
 
 status
 	Display MPD status.
