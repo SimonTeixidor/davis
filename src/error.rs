@@ -41,7 +41,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::Mpd(e) => {
-                write!(f, "An error occured when communicating with MPD:\n{}", e)
+                write!(f, "An error occurred when communicating with MPD:\n{}", e)
             }
             Error::Io { error, context } => {
                 write!(f, "I/O error when {}:\n{}", context, error)
