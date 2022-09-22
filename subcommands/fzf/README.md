@@ -1,4 +1,5 @@
 # davis-fzf
+
 A command which uses [fzf](https://github.com/junegunn/fzf) to quickly find
 albums in the database. Launch the script with `davis fzf`, and iteratively add
 filters. Once done, press escape, and the matching albums will be added to the
