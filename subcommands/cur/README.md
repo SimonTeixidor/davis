@@ -1,4 +1,5 @@
 # davis-cur
+
 Displays the current album art and metadata.
 
 ![davis-cur screenshot](../../scrots/cur.png)
