@@ -1,5 +1,7 @@
 # Davis
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/davis.svg)](https://repology.org/project/davis/versions)
+
 Davis is a [MPD](https://www.musicpd.org/) client for music lovers.
 
 ## Features
@@ -33,6 +35,14 @@ Davis can be extended with custom subcommands (here [`davis-fzf`](subcommands/fz
 See the [manual](MANUAL.txt) for details on how to add new subcommands.
 
 ## Installing
+
+### Arch Linux
+
+#### From AUR
+
+Install [davis](https://aur.archlinux.org/packages/davis) AUR package.
+
+### Generic Installation
 
 You will need a rust toolchain. To install, you run
 
