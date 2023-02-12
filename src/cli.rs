@@ -57,7 +57,7 @@ fn lexopt_parse_args() -> Result<Opts, lexopt::Error> {
                 print_help();
                 std::process::exit(0);
             }
-            Short('h') => {
+            Short('h') | Long("host") => {
                 host = Some(parser.value()?.parse()?);
             }
             Short('v') | Long("verbose") => {
