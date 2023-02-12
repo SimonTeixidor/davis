@@ -22,7 +22,7 @@ checksum = "06821ea598337a8412cf47c5b71c3bc694a7f0aed188ac28b836fab164a2c202"
 
 [[package]]
 name = "davis"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "configparser",
  "lexopt",
