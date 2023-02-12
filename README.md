@@ -42,39 +42,6 @@ See the [manual](MANUAL.txt) for details on how to add new subcommands.
 
 Install [davis](https://aur.archlinux.org/packages/davis) AUR package.
 
-#### From PolarRepo (prebuilt package)
-
-Add the PolarRepo repository to `/etc/pacman.conf`
-
-```
-[polarrepo]
-Server = https://polarrepo.polarian.dev/
-```
-
-You will then need to import Polarian's GPG key to be able to verify the
-package signature:
-
-`pacman-key --recv-keys 0770E5312238C760`
-
-The owner of this key is `Polarian <polarian@polarian.dev`, otherwise it
-is invalid and should not be imported.
-
-You then need to locally sign the key, this tells pacman that the key is
-trusted and the package should be allowed to be installed.
-
-`pacman-key --lsign-key 0770E5312238C760`
-
-You can then install `davis` using the pacman package manager as any
-other package, using the following command:
-
-`pacman -Syu davis`
-
-Davis will be updated to the latest version every time `pacman -Syu` is
-called.
-
-For more information see
-[PolarRepo](https://onedev.polarian.dev/polarrepo).
-
 ### Generic Installation
 
 You will need a rust toolchain. To install, you run
