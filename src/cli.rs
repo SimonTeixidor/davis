@@ -120,8 +120,12 @@ fn parse_subcommand(
             while let Some(Value(i)) = parser.next()? {
                 query.push(i.into_string()?);
             }
-            SubCommand::Search {
-                query: SearchQuery { query },
+            if query.len() == 1 || query.len() % 2 == 0 {
+                SubCommand::Search {
+                    query: SearchQuery::from_strings(query)?
+                }
+            } else {
+                return Err("Search argument must be either a single string, or pairs of key-value strings.".into())
             }
         }
         "list" => {
@@ -133,7 +137,7 @@ fn parse_subcommand(
 
             SubCommand::List {
                 tag,
-                query: SearchQuery { query },
+                query: SearchQuery::from_strings(query)?
             }
         }
         "read-comments" => SubCommand::ReadComments {
@@ -243,20 +247,39 @@ pub enum SubCommand {
     Custom(Vec<OsString>),
 }
 
-pub struct SearchQuery {
-    pub query: Vec<String>,
+pub enum SearchQuery {
+    Expression(String),
+    Filters(Vec<(String, String)>)
 }
 
 impl SearchQuery {
     pub fn to_mpd_query(&self) -> mpdrs::Query {
-        if self.query.len() == 1 {
-            mpdrs::Query::Expression(self.query[0].clone())
-        } else {
-            let mut query = mpdrs::FilterQuery::new();
-            for slice in self.query.chunks(2) {
-                query.and(mpdrs::Term::Tag(&*slice[0]), &*slice[1]);
+        match self {
+            SearchQuery::Expression(query) => {
+                mpdrs::Query::Expression(query.clone())
+
+            },
+            SearchQuery::Filters(filters) => {
+                let mut query = mpdrs::FilterQuery::new();
+                for pair in filters {
+                    query.and(mpdrs::Term::Tag(&*pair.0), &*pair.1);
+                }
+                mpdrs::Query::Filters(query)
             }
-            mpdrs::Query::Filters(query)
+        }
+    }
+
+    pub fn from_strings(mut strings: Vec<String>) -> Result<SearchQuery, lexopt::Error> {
+        if strings.len() == 1 {
+            Ok(SearchQuery::Expression(strings.remove(0)))
+        } else if strings.len() % 2 == 0 {
+            let mut filters = Vec::new();
+            for pair in strings.chunks(2) {
+                filters.push((pair[0].clone(), pair[1].clone()));
+            }
+            Ok(SearchQuery::Filters(filters))
+        } else {
+            Err("Search argument must be either a single string, or pairs of key-value strings.".into())
         }
     }
 }
