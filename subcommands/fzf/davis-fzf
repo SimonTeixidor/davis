@@ -43,6 +43,6 @@ foo() {
 EXPR="$(foo | tail -n 1)"
 if [ -n "$EXPR" ]; then
 	davis clear
-	davis search "($EXPR)" | rev | cut -d/ -f2- | rev | sort -u | xargs -d'\n' davis add
+	davis search "($EXPR)" | rev | cut -d/ -f2- | rev | sort -u | xargs -L 1 -d'\n' davis add
 	davis play
 fi
