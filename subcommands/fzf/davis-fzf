@@ -8,6 +8,10 @@ expr_reduce() {
 	awk -vFS="\n" 'NR > 1 { printf(" AND ") } { printf "%s", $1 }'
 }
 
+escape_quotes() {
+	sed 's/"/\\\"/g'
+}
+
 alternatives() {
 	EXPR="$1"
 	TAG="$2"
@@ -25,7 +29,7 @@ foo() {
 	echo "$EXPR"
 	case "$TAGS" in
 		*" $LAST "*)
-			NEW_TERMS="$(alternatives "$EXPR" "$LAST" | fzf -m | while read -r l; do echo "($LAST == \"$l\")"; done | expr_reduce)"
+			NEW_TERMS="$(alternatives "$EXPR" "$LAST" | fzf -m | escape_quotes | while read -r l; do echo "($LAST == \"$l\")"; done | expr_reduce)"
 			if [ -n "$EXPR" ]; then
 				EXPR="$EXPR AND $NEW_TERMS"
 			else
@@ -43,6 +47,6 @@ foo() {
 EXPR="$(foo | tail -n 1)"
 if [ -n "$EXPR" ]; then
 	davis clear
-	davis search "($EXPR)" | rev | cut -d/ -f2- | rev | sort -u | xargs -L 1 -d'\n' davis add
+	davis search "($EXPR)" | rev | cut -d/ -f2- | rev | sort -u | xargs -L1 -d'\n' davis add
 	davis play
 fi
