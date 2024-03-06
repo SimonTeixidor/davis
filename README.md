@@ -2,7 +2,7 @@
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/davis.svg)](https://repology.org/project/davis/versions)
 
-Davis is a [MPD](https://www.musicpd.org/) client for music lovers.
+Davis is an [MPD](https://www.musicpd.org/) client for music lovers.
 
 ## Features
 
